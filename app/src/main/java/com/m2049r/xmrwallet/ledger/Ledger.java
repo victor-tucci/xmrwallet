@@ -36,17 +36,17 @@ import java.nio.charset.StandardCharsets;
 import timber.log.Timber;
 
 public class Ledger {
-    static final public boolean ENABLED = true;
+    static final public boolean ENABLED = false;
     // 5:20 is same as wallet2.cpp::restore()
     static public final int LOOKAHEAD_ACCOUNTS = 5;
     static public final int LOOKAHEAD_SUBADDRESSES = 20;
     static public final String SUBADDRESS_LOOKAHEAD = LOOKAHEAD_ACCOUNTS + ":" + LOOKAHEAD_SUBADDRESSES;
 
-    private static final byte PROTOCOL_VERSION = 0x03;
+    private static final byte PROTOCOL_VERSION = 0x02;
     public static final int SW_OK = 0x9000;
     public static final int SW_INS_NOT_SUPPORTED = 0x6D00;
     public static final int OK[] = {SW_OK};
-    public static final int MINIMUM_LEDGER_VERSION = (1 << 16) + (6 << 8) + (0); // 1.6.0
+    public static final int MINIMUM_LEDGER_VERSION = (1 << 16) + (3 << 8) + (1); // 1.3.1
 
     public static UsbDevice findDevice(UsbManager usbManager) {
         if (!ENABLED) return null;
@@ -94,6 +94,8 @@ public class Ledger {
     }
 
     static public boolean check() {
+        return false;
+        /*
         if (Instance == null) return false;
         byte[] moneroVersion = WalletManager.moneroVersion().getBytes(StandardCharsets.US_ASCII);
 
@@ -106,6 +108,7 @@ public class Ledger {
             return false;
         }
         return true;
+         */
     }
 
     final private BTChipTransport transport;

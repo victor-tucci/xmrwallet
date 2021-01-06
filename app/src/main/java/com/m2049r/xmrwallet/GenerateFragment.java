@@ -17,9 +17,13 @@
 package com.m2049r.xmrwallet;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.design.widget.TextInputLayout;
+import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.Html;
 import android.text.InputType;
@@ -34,15 +38,9 @@ import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.switchmaterial.SwitchMaterial;
-import com.google.android.material.textfield.TextInputLayout;
 import com.m2049r.xmrwallet.model.Wallet;
 import com.m2049r.xmrwallet.model.WalletManager;
 import com.m2049r.xmrwallet.util.FingerprintHelper;
@@ -204,13 +202,13 @@ public class GenerateFragment extends Fragment {
         if (FingerprintHelper.isDeviceSupported(getContext())) {
             llFingerprintAuth.setVisibility(View.VISIBLE);
 
-            final SwitchMaterial swFingerprintAllowed = (SwitchMaterial) llFingerprintAuth.getChildAt(0);
+            final Switch swFingerprintAllowed = (Switch) llFingerprintAuth.getChildAt(0);
             swFingerprintAllowed.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     if (!swFingerprintAllowed.isChecked()) return;
 
-                    MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                     builder.setMessage(Html.fromHtml(getString(R.string.generate_fingerprint_warn)))
                             .setCancelable(false)
                             .setPositiveButton(getString(R.string.label_ok), null)
@@ -440,7 +438,7 @@ public class GenerateFragment extends Fragment {
             height = RestoreHeight.getInstance().getHeight(parser.parse(restoreHeight));
         } catch (ParseException ex) {
         }
-        if ((height <= 0) && (restoreHeight.length() == 8))
+        if (height <= 0)
             try {
                 // is it a date without dashes?
                 SimpleDateFormat parser = new SimpleDateFormat("yyyyMMdd");
@@ -509,7 +507,7 @@ public class GenerateFragment extends Fragment {
 
         String name = etWalletName.getEditText().getText().toString();
         String password = etWalletPassword.getEditText().getText().toString();
-        boolean fingerprintAuthAllowed = ((SwitchMaterial) llFingerprintAuth.getChildAt(0)).isChecked();
+        boolean fingerprintAuthAllowed = ((Switch) llFingerprintAuth.getChildAt(0)).isChecked();
 
         // create the real wallet password
         String crazyPass = KeyStoreHelper.getCrazyPass(getActivity(), password);
@@ -648,7 +646,7 @@ public class GenerateFragment extends Fragment {
         if (ledgerDialog != null) return;
         final Activity activity = getActivity();
         View promptsView = getLayoutInflater().inflate(R.layout.prompt_ledger_seed, null);
-        MaterialAlertDialogBuilder alertDialogBuilder = new MaterialAlertDialogBuilder(activity);
+        android.app.AlertDialog.Builder alertDialogBuilder = new android.app.AlertDialog.Builder(activity);
         alertDialogBuilder.setView(promptsView);
 
         final TextInputLayout etSeed = promptsView.findViewById(R.id.etSeed);

@@ -26,8 +26,6 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 
-import lombok.Getter;
-import lombok.Setter;
 import timber.log.Timber;
 
 public class Node {
@@ -35,29 +33,15 @@ public class Node {
     static public final String STAGENET = "stagenet";
     static public final String TESTNET = "testnet";
 
-    @Getter
     private String name = null;
-    @Getter
     final private NetworkType networkType;
     InetAddress hostAddress;
-    @Getter
     private String host;
-    @Getter
-    @Setter
     int rpcPort = 0;
     private int levinPort = 0;
-    @Getter
-    @Setter
     private String username = "";
-    @Getter
-    @Setter
     private String password = "";
-    @Getter
-    @Setter
     private boolean favourite = false;
-    @Getter
-    @Setter
-    private boolean selected = false;
 
     @Override
     public int hashCode() {
@@ -209,6 +193,7 @@ public class Node {
         this.levinPort = socketAddress.getPort();
         this.username = "";
         this.password = "";
+        //this.name = socketAddress.getHostName(); // triggers DNS so we don't do it by default
     }
 
     public String getAddress() {
@@ -219,11 +204,31 @@ public class Node {
         return hostAddress.getHostAddress();
     }
 
+    public String getHost() {
+        return host;
+    }
+
+    public int getRpcPort() {
+        return rpcPort;
+    }
+
     public void setHost(String host) throws UnknownHostException {
         if ((host == null) || (host.isEmpty()))
             throw new UnknownHostException("loopback not supported (yet?)");
         this.host = host;
         this.hostAddress = InetAddress.getByName(host);
+    }
+
+    public void setUsername(String user) {
+        username = user;
+    }
+
+    public void setPassword(String pass) {
+        password = pass;
+    }
+
+    public void setRpcPort(int port) {
+        this.rpcPort = port;
     }
 
     public void setName() {
@@ -236,6 +241,30 @@ public class Node {
             this.name = hostAddress.getHostName();
         else
             this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public NetworkType getNetworkType() {
+        return networkType;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public boolean isFavourite() {
+        return favourite;
+    }
+
+    public void setFavourite(boolean favourite) {
+        this.favourite = favourite;
     }
 
     public void toggleFavourite() {
@@ -267,13 +296,13 @@ public class Node {
         if (DEFAULT_LEVIN_PORT > 0) return DEFAULT_LEVIN_PORT;
         switch (WalletManager.getInstance().getNetworkType()) {
             case NetworkType_Mainnet:
-                DEFAULT_LEVIN_PORT = 18080;
+                DEFAULT_LEVIN_PORT = 22022;
                 break;
             case NetworkType_Testnet:
-                DEFAULT_LEVIN_PORT = 28080;
+                DEFAULT_LEVIN_PORT = 38156;
                 break;
             case NetworkType_Stagenet:
-                DEFAULT_LEVIN_PORT = 38080;
+                DEFAULT_LEVIN_PORT = 38153;
                 break;
             default:
                 throw new IllegalStateException("unsupported net " + WalletManager.getInstance().getNetworkType());
@@ -288,13 +317,13 @@ public class Node {
         if (DEFAULT_RPC_PORT > 0) return DEFAULT_RPC_PORT;
         switch (WalletManager.getInstance().getNetworkType()) {
             case NetworkType_Mainnet:
-                DEFAULT_RPC_PORT = 18081;
+                DEFAULT_RPC_PORT = 22023;
                 break;
             case NetworkType_Testnet:
-                DEFAULT_RPC_PORT = 28081;
+                DEFAULT_RPC_PORT = 38157;
                 break;
             case NetworkType_Stagenet:
-                DEFAULT_RPC_PORT = 38081;
+                DEFAULT_RPC_PORT = 38154;
                 break;
             default:
                 throw new IllegalStateException("unsupported net " + WalletManager.getInstance().getNetworkType());

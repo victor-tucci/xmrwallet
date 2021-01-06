@@ -8,6 +8,15 @@ add_library( monerujo
 set(EXTERNAL_LIBS_DIR ${CMAKE_SOURCE_DIR}/../external-libs)
 
 ############
+# libsqlite
+############
+
+add_library(sqlite STATIC IMPORTED)
+set_target_properties(sqlite PROPERTIES IMPORTED_LOCATION
+        ${EXTERNAL_LIBS_DIR}/sqlite/lib/${ANDROID_ABI}/libsqlite3.a)
+
+
+############
 # libsodium
 ############
 
@@ -127,10 +136,6 @@ add_library(epee STATIC IMPORTED)
 set_target_properties(epee PROPERTIES IMPORTED_LOCATION
     ${EXTERNAL_LIBS_DIR}/monero/lib/${ANDROID_ABI}/libepee.a)
 
-add_library(blocks STATIC IMPORTED)
-set_target_properties(blocks PROPERTIES IMPORTED_LOCATION
-    ${EXTERNAL_LIBS_DIR}/monero/lib/${ANDROID_ABI}/libblocks.a)
-
 add_library(checkpoints STATIC IMPORTED)
 set_target_properties(checkpoints PROPERTIES IMPORTED_LOCATION
     ${EXTERNAL_LIBS_DIR}/monero/lib/${ANDROID_ABI}/libcheckpoints.a)
@@ -155,17 +160,13 @@ add_library(net STATIC IMPORTED)
 set_target_properties(net PROPERTIES IMPORTED_LOCATION
         ${EXTERNAL_LIBS_DIR}/monero/lib/${ANDROID_ABI}/libnet.a)
 
-add_library(hardforks STATIC IMPORTED)
-set_target_properties(hardforks PROPERTIES IMPORTED_LOCATION
-        ${EXTERNAL_LIBS_DIR}/monero/lib/${ANDROID_ABI}/libhardforks.a)
-
 add_library(randomx STATIC IMPORTED)
 set_target_properties(randomx PROPERTIES IMPORTED_LOCATION
         ${EXTERNAL_LIBS_DIR}/monero/lib/${ANDROID_ABI}/librandomx.a)
 
-add_library(rpc_base STATIC IMPORTED)
-set_target_properties(rpc_base PROPERTIES IMPORTED_LOCATION
-        ${EXTERNAL_LIBS_DIR}/monero/lib/${ANDROID_ABI}/librpc_base.a)
+#add_library(rpc_base STATIC IMPORTED)
+#set_target_properties(rpc_base PROPERTIES IMPORTED_LOCATION
+#        ${EXTERNAL_LIBS_DIR}/monero/lib/${ANDROID_ABI}/librpc_base.a)
 
 #############
 # System
@@ -194,16 +195,13 @@ target_link_libraries(  monerujo
                         easylogging
                         unbound
                         epee
-                        blocks
                         checkpoints
                         device
                         device_trezor
                         multisig
                         version
                         randomx
-                        hardforks
-                        rpc_base
-
+#                        rpc_base
                         boost_chrono
                         boost_date_time
                         boost_filesystem
@@ -213,7 +211,7 @@ target_link_libraries(  monerujo
                         boost_system
                         boost_thread
                         boost_wserialization
-
+                        sqlite
                         ssl
                         crypto
 

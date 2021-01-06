@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020, The Monero Project
+// Copyright (c) 2014-2019, The Monero Project
 // 
 // All rights reserved.
 // 
@@ -77,19 +77,11 @@ struct PendingTransaction
         Status_Critical
     };
 
-    enum Priority {
-        Priority_Default = 0,
-        Priority_Low = 1,
-        Priority_Medium = 2,
-        Priority_High = 3,
-        Priority_Last
-    };
-
     virtual ~PendingTransaction() = 0;
     virtual int status() const = 0;
     virtual std::string errorString() const = 0;
     // commit transaction or save to file if filename is provided.
-    virtual bool commit(const std::string &filename = "", bool overwrite = false) = 0;
+    virtual bool commit(const std::string &filename = "", bool overwrite = false, bool blink = false) = 0;
     virtual uint64_t amount() const = 0;
     virtual uint64_t dust() const = 0;
     virtual uint64_t fee() const = 0;
@@ -179,6 +171,8 @@ struct TransactionInfo
     };
 
     virtual ~TransactionInfo() = 0;
+    virtual bool isServiceNodeReward() const = 0;
+    virtual bool isMinerReward() const = 0;
     virtual int  direction() const = 0;
     virtual bool isPending() const = 0;
     virtual bool isFailed() const = 0;
@@ -400,8 +394,8 @@ struct WalletListener
     /**
      * @brief called by device when passphrase entry is needed
      */
-    virtual optional<std::string> onDevicePassphraseRequest(bool & on_device) {
-        on_device = true;
+    virtual optional<std::string> onDevicePassphraseRequest(bool on_device) {
+        if (!on_device) throw std::runtime_error("Not supported");
         return optional<std::string>();
     }
 
@@ -507,11 +501,6 @@ struct Wallet
     virtual std::string publicMultisigSignerKey() const = 0;
 
     /*!
-     * \brief stop - interrupts wallet refresh() loop once (doesn't stop background refresh thread)
-     */
-    virtual void stop() = 0;
-
-    /*!
      * \brief store - stores wallet to file.
      * \param path - main filename to store wallet to. additionally stores address file and keys file.
      *               to store to the same file - just pass empty string;
@@ -538,10 +527,9 @@ struct Wallet
      * \param daemon_username
      * \param daemon_password
      * \param lightWallet - start wallet in light mode, connect to a openmonero compatible server.
-     * \param proxy_address - set proxy address, empty string to disable
      * \return  - true on success
      */
-    virtual bool init(const std::string &daemon_address, uint64_t upper_transaction_size_limit = 0, const std::string &daemon_username = "", const std::string &daemon_password = "", bool use_ssl = false, bool lightWallet = false, const std::string &proxy_address = "") = 0;
+    virtual bool init(const std::string &daemon_address, uint64_t upper_transaction_size_limit = 0, const std::string &daemon_username = "", const std::string &daemon_password = "", bool use_ssl = false, bool lightWallet = false) = 0;
 
    /*!
     * \brief createWatchOnly - Creates a watch only wallet
@@ -600,7 +588,6 @@ struct Wallet
     virtual ConnectionStatus connected() const = 0;
     virtual void setTrustedDaemon(bool arg) = 0;
     virtual bool trustedDaemon() const = 0;
-    virtual bool setProxy(const std::string &address) = 0;
     virtual uint64_t balance(uint32_t accountIndex = 0) const = 0;
     uint64_t balanceAll() const {
         uint64_t result = 0;
@@ -665,6 +652,8 @@ struct Wallet
     static uint64_t amountFromDouble(double amount);
     static std::string genPaymentId();
     static bool paymentIdValid(const std::string &paiment_id);
+    /// Check if the string represents a valid public key (regardless of whether the service node actually exists or not)
+    static bool serviceNodePubkeyValid(const std::string &str);
     static bool addressValid(const std::string &str, NetworkType nettype);
     static bool addressValid(const std::string &str, bool testnet)          // deprecated
     {
@@ -819,26 +808,6 @@ struct Wallet
      * @return PendingTransaction
      */
     virtual PendingTransaction*  restoreMultisigTransaction(const std::string& signData) = 0;
-
-    /*!
-     * \brief createTransactionMultDest creates transaction with multiple destinations. if dst_addr is an integrated address, payment_id is ignored
-     * \param dst_addr                  vector of destination address as string
-     * \param payment_id                optional payment_id, can be empty string
-     * \param amount                    vector of amounts
-     * \param mixin_count               mixin count. if 0 passed, wallet will use default value
-     * \param subaddr_account           subaddress account from which the input funds are taken
-     * \param subaddr_indices           set of subaddress indices to use for transfer or sweeping. if set empty, all are chosen when sweeping, and one or more are automatically chosen when transferring. after execution, returns the set of actually used indices
-     * \param priority
-     * \return                          PendingTransaction object. caller is responsible to check PendingTransaction::status()
-     *                                  after object returned
-     */
-
-    virtual PendingTransaction * createTransactionMultDest(const std::vector<std::string> &dst_addr, const std::string &payment_id,
-                                                   optional<std::vector<uint64_t>> amount, uint32_t mixin_count,
-                                                   PendingTransaction::Priority = PendingTransaction::Priority_Low,
-                                                   uint32_t subaddr_account = 0,
-                                                   std::set<uint32_t> subaddr_indices = {}) = 0;
-
     /*!
      * \brief createTransaction creates transaction. if dst_addr is an integrated address, payment_id is ignored
      * \param dst_addr          destination address as string
@@ -847,16 +816,18 @@ struct Wallet
      * \param mixin_count       mixin count. if 0 passed, wallet will use default value
      * \param subaddr_account   subaddress account from which the input funds are taken
      * \param subaddr_indices   set of subaddress indices to use for transfer or sweeping. if set empty, all are chosen when sweeping, and one or more are automatically chosen when transferring. after execution, returns the set of actually used indices
-     * \param priority
+     * \param priority          set a priority for the transaction. Accepted Values are: default (0), or 0-5 for: default, unimportant, normal, elevated, priority, blink.
      * \return                  PendingTransaction object. caller is responsible to check PendingTransaction::status()
      *                          after object returned
      */
 
-    virtual PendingTransaction * createTransaction(const std::string &dst_addr, const std::string &payment_id,
-                                                   optional<uint64_t> amount, uint32_t mixin_count,
-                                                   PendingTransaction::Priority = PendingTransaction::Priority_Low,
-                                                   uint32_t subaddr_account = 0,
-                                                   std::set<uint32_t> subaddr_indices = {}) = 0;
+    virtual PendingTransaction *createTransaction(const std::string &dst_addr,
+                                                  const std::string &payment_id,
+                                                  optional<uint64_t> amount,
+                                                  uint32_t mixin_count,
+                                                  uint32_t priority                  = 0,
+                                                  uint32_t subaddr_account           = 0,
+                                                  std::set<uint32_t> subaddr_indices = {}) = 0;
 
     /*!
      * \brief createSweepUnmixableTransaction creates transaction with unmixable outputs.
@@ -886,14 +857,6 @@ struct Wallet
      */
     virtual void disposeTransaction(PendingTransaction * t) = 0;
 
-    /*!
-     * \brief Estimates transaction fee.
-     * \param destinations Vector consisting of <address, amount> pairs.
-     * \return Estimated fee.
-     */
-    virtual uint64_t estimateTransactionFee(const std::vector<std::pair<std::string, uint64_t>> &destinations,
-                                            PendingTransaction::Priority priority) const = 0;
-
    /*!
     * \brief exportKeyImages - exports key images to file
     * \param filename
@@ -914,30 +877,7 @@ struct Wallet
     virtual Subaddress * subaddress() = 0;
     virtual SubaddressAccount * subaddressAccount() = 0;
     virtual void setListener(WalletListener *) = 0;
-    /*!
-     * \brief defaultMixin - returns number of mixins used in transactions
-     * \return
-     */
-    virtual uint32_t defaultMixin() const = 0;
-    /*!
-     * \brief setDefaultMixin - setum number of mixins to be used for new transactions
-     * \param arg
-     */
-    virtual void setDefaultMixin(uint32_t arg) = 0;
 
-    /*!
-     * \brief setCacheAttribute - attach an arbitrary string to a wallet cache attribute
-     * \param key - the key
-     * \param val - the value
-     * \return true if successful, false otherwise
-     */
-    virtual bool setCacheAttribute(const std::string &key, const std::string &val) = 0;
-    /*!
-     * \brief getCacheAttribute - return an arbitrary string attached to a wallet cache attribute
-     * \param key - the key
-     * \return the attached string, or empty string if there is none
-     */
-    virtual std::string getCacheAttribute(const std::string &key) const = 0;
     /*!
      * \brief setUserNote - attach an arbitrary string note to a txid
      * \param txid - the transaction id to attach the note to
@@ -1049,17 +989,17 @@ struct Wallet
      */
     virtual Device getDeviceType() const = 0;
 
+    /// Prepare a staking transaction; return nullptr on failure
+    virtual PendingTransaction* stakePending(const std::string& service_node_key, const std::string& address, const std::string& amount, std::string& error_msg) = 0;
+
     //! cold-device protocol key image sync
     virtual uint64_t coldKeyImageSync(uint64_t &spent, uint64_t &unspent) = 0;
-
-    //! shows address on device display
-    virtual void deviceShowAddress(uint32_t accountIndex, uint32_t addressIndex, const std::string &paymentId) = 0;
 };
 
 /**
  * @brief WalletManager - provides functions to manage wallets
  */
-struct WalletManager
+struct WalletManagerBase
 {
 
     /*!
@@ -1100,12 +1040,10 @@ struct WalletManager
      * \param  nettype        Network type
      * \param  restoreHeight  restore from start height
      * \param  kdf_rounds     Number of rounds for key derivation function
-     * \param  seed_offset    Seed offset passphrase (optional)
      * \return                Wallet instance (Wallet::status() needs to be called to check if recovered successfully)
      */
     virtual Wallet * recoveryWallet(const std::string &path, const std::string &password, const std::string &mnemonic,
-                                    NetworkType nettype = MAINNET, uint64_t restoreHeight = 0, uint64_t kdf_rounds = 1,
-                                    const std::string &seed_offset = {}) = 0;
+                                    NetworkType nettype = MAINNET, uint64_t restoreHeight = 0, uint64_t kdf_rounds = 1) = 0;
     Wallet * recoveryWallet(const std::string &path, const std::string &password, const std::string &mnemonic,
                                     bool testnet = false, uint64_t restoreHeight = 0)           // deprecated
     {
@@ -1300,16 +1238,8 @@ struct WalletManager
     virtual std::string resolveOpenAlias(const std::string &address, bool &dnssec_valid) const = 0;
 
     //! checks for an update and returns version, hash and url
-    static std::tuple<bool, std::string, std::string, std::string, std::string> checkUpdates(
-        const std::string &software,
-        std::string subdir,
-        const char *buildtag = nullptr,
-        const char *current_version = nullptr);
-
-    //! sets proxy address, empty string to disable
-    virtual bool setProxy(const std::string &address) = 0;
+    static std::tuple<bool, std::string, std::string, std::string, std::string> checkUpdates(const std::string &software, std::string subdir);
 };
-
 
 struct WalletManagerFactory
 {
@@ -1325,7 +1255,7 @@ struct WalletManagerFactory
         LogLevel_Max = LogLevel_4
     };
 
-    static WalletManager * getWalletManager();
+    static WalletManagerBase * getWalletManager();
     static void setLogLevel(int level);
     static void setLogCategories(const std::string &categories);
 };

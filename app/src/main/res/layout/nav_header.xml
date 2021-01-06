@@ -10,7 +10,7 @@
     <TextView
         android:id="@+id/tvName"
         style="@style/MoneroText.Large"
-        android:textColor="?attr/colorPrimary"
+        android:textColor="@color/moneroWhite"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
@@ -23,6 +23,6 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:gravity="end"
-        tools:text="12.34 XMR" />
+        tools:text="12.34 LOKI" />
 
 </RelativeLayout>

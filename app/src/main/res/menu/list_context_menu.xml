@@ -28,6 +28,7 @@
 
     <item
         android:id="@+id/action_info"
+        android:icon="@drawable/ic_info_white_24dp"
         android:orderInCategory="500"
         android:title="@string/menu_info" />
 

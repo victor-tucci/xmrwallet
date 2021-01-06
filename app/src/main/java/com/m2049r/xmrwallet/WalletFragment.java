@@ -17,10 +17,12 @@
 package com.m2049r.xmrwallet;
 
 import android.content.Context;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -36,11 +38,6 @@ import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.github.brnunes.swipeablerecyclerview.SwipeableRecyclerViewTouchListener;
 import com.m2049r.xmrwallet.layout.TransactionInfoAdapter;
 import com.m2049r.xmrwallet.model.TransactionInfo;
@@ -48,6 +45,7 @@ import com.m2049r.xmrwallet.model.Wallet;
 import com.m2049r.xmrwallet.service.exchange.api.ExchangeApi;
 import com.m2049r.xmrwallet.service.exchange.api.ExchangeCallback;
 import com.m2049r.xmrwallet.service.exchange.api.ExchangeRate;
+import com.m2049r.xmrwallet.util.AppPreferences;
 import com.m2049r.xmrwallet.util.Helper;
 import com.m2049r.xmrwallet.widget.Toolbar;
 
@@ -58,8 +56,8 @@ import java.util.List;
 
 import timber.log.Timber;
 
-public class WalletFragment extends Fragment
-        implements TransactionInfoAdapter.OnInteractionListener {
+public class WalletFragment extends Fragment implements TransactionInfoAdapter.OnInteractionListener {
+
     private TransactionInfoAdapter adapter;
     private NumberFormat formatter = NumberFormat.getInstance();
 
@@ -73,10 +71,12 @@ public class WalletFragment extends Fragment
     private ProgressBar pbProgress;
     private Button bReceive;
     private Button bSend;
-    private ImageView ivStreetGunther;
-    private Drawable streetGunther = null;
-
     private Spinner sCurrency;
+
+    private final ExchangeApi exchangeApi = Helper.getExchangeApi();
+
+    String balanceCurrency = Helper.BASE_CRYPTO;
+    double balanceRate = 1.0;
 
     private List<String> dismissedTransactions = new ArrayList<>();
 
@@ -102,12 +102,11 @@ public class WalletFragment extends Fragment
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_wallet, container, false);
 
-        ivStreetGunther = view.findViewById(R.id.ivStreetGunther);
         tvStreetView = view.findViewById(R.id.tvStreetView);
         llBalance = view.findViewById(R.id.llBalance);
         flExchange = view.findViewById(R.id.flExchange);
         ((ProgressBar) view.findViewById(R.id.pbExchange)).getIndeterminateDrawable().
-                setColorFilter(getResources().getColor(R.color.progress_circle),
+                setColorFilter(getResources().getColor(R.color.trafficGray),
                         android.graphics.PorterDuff.Mode.MULTIPLY);
 
         tvProgress = view.findViewById(R.id.tvProgress);
@@ -168,19 +167,8 @@ public class WalletFragment extends Fragment
 
         recyclerView.addOnItemTouchListener(swipeTouchListener);
 
-
-        bSend.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                activityCallback.onSendRequest();
-            }
-        });
-        bReceive.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                activityCallback.onWalletReceive();
-            }
-        });
+        bSend.setOnClickListener(v -> activityCallback.onSendRequest());
+        bReceive.setOnClickListener(v -> activityCallback.onWalletReceive());
 
         sCurrency.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -205,15 +193,13 @@ public class WalletFragment extends Fragment
 
     void showBalance(String balance) {
         tvBalance.setText(balance);
-        final boolean streetMode = activityCallback.isStreetMode();
-        if (!streetMode) {
+        if (!activityCallback.isStreetMode()) {
             llBalance.setVisibility(View.VISIBLE);
             tvStreetView.setVisibility(View.INVISIBLE);
         } else {
             llBalance.setVisibility(View.INVISIBLE);
             tvStreetView.setVisibility(View.VISIBLE);
         }
-        setStreetModeBackground(streetMode);
     }
 
     void showUnconfirmed(double unconfirmedAmount) {
@@ -227,22 +213,17 @@ public class WalletFragment extends Fragment
 
     void updateBalance() {
         if (isExchanging) return; // wait for exchange to finish - it will fire this itself then.
-        // at this point selection is XMR in case of error
+        // at this point selection is LOKI in case of error
         String displayB;
         double amountA = Helper.getDecimalAmount(unlockedBalance).doubleValue();
-        if (!Helper.BASE_CRYPTO.equals(balanceCurrency)) { // not XMR
+        if (!Helper.BASE_CRYPTO.equals(balanceCurrency)) { // not LOKI
             double amountB = amountA * balanceRate;
             displayB = Helper.getFormattedAmount(amountB, false);
-        } else { // XMR
+        } else { // LOKI
             displayB = Helper.getFormattedAmount(amountA, true);
         }
         showBalance(displayB);
     }
-
-    String balanceCurrency = Helper.BASE_CRYPTO;
-    double balanceRate = 1.0;
-
-    private final ExchangeApi exchangeApi = Helper.getExchangeApi();
 
     void refreshBalance() {
         double unconfirmedXmr = Helper.getDecimalAmount(balance - unlockedBalance).doubleValue();
@@ -260,24 +241,14 @@ public class WalletFragment extends Fragment
                             @Override
                             public void onSuccess(final ExchangeRate exchangeRate) {
                                 if (isAdded())
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            exchange(exchangeRate);
-                                        }
-                                    });
+                                    new Handler(Looper.getMainLooper()).post(() -> exchange(exchangeRate));
                             }
 
                             @Override
                             public void onError(final Exception e) {
                                 Timber.e(e.getLocalizedMessage());
                                 if (isAdded())
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            exchangeFailed();
-                                        }
-                                    });
+                                    new Handler(Looper.getMainLooper()).post(() -> exchangeFailed());
                             }
                         });
             } else {
@@ -312,7 +283,7 @@ public class WalletFragment extends Fragment
     public void exchange(final ExchangeRate exchangeRate) {
         hideExchanging();
         if (!Helper.BASE_CRYPTO.equals(exchangeRate.getBaseCurrency())) {
-            Timber.e("Not XMR");
+            Timber.e("Not LOKI");
             sCurrency.setSelection(0, true);
             balanceCurrency = Helper.BASE_CRYPTO;
             balanceRate = 1.0;
@@ -362,15 +333,6 @@ public class WalletFragment extends Fragment
             bSend.setEnabled(true);
         }
         if (isVisible()) enableAccountsList(true); //otherwise it is enabled in onResume()
-    }
-
-    public void unsync() {
-        if (!activityCallback.isWatchOnly()) {
-            bSend.setVisibility(View.INVISIBLE);
-            bSend.setEnabled(false);
-        }
-        if (isVisible()) enableAccountsList(false); //otherwise it is enabled in onResume()
-        firstBlock = 0;
     }
 
     boolean walletLoaded = false;
@@ -545,13 +507,4 @@ public class WalletFragment extends Fragment
         }
     }
 
-    public void setStreetModeBackground(boolean enable) {
-        //TODO figure out why gunther disappears on return from send although he is still set
-        if (enable) {
-            if (streetGunther == null)
-                streetGunther = ContextCompat.getDrawable(getContext(), R.drawable.ic_gunther_streetmode);
-            ivStreetGunther.setImageDrawable(streetGunther);
-        } else
-            ivStreetGunther.setImageDrawable(null);
-    }
 }

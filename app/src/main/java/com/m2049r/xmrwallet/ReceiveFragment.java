@@ -25,6 +25,12 @@ import android.net.Uri;
 import android.nfc.NfcManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.design.widget.TextInputLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.content.FileProvider;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -36,6 +42,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -43,13 +50,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.widget.ShareActionProvider;
-import androidx.core.content.FileProvider;
-import androidx.core.view.MenuItemCompat;
-import androidx.fragment.app.Fragment;
-
-import com.google.android.material.textfield.TextInputLayout;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
@@ -82,11 +82,10 @@ public class ReceiveFragment extends Fragment {
     private ExchangeView evAmount;
     private TextView tvQrCode;
     private ImageView ivQrCode;
-    private View cvQrCode;
     private ImageView ivQrCodeFull;
     private EditText etDummy;
     private ImageButton bCopyAddress;
-    private ImageButton bSubaddress;
+    private Button bSubaddress;
 
     private Wallet wallet = null;
     private boolean isMyWallet = false;
@@ -110,7 +109,6 @@ public class ReceiveFragment extends Fragment {
         tvAddress = view.findViewById(R.id.tvAddress);
         etNotes = view.findViewById(R.id.etNotes);
         evAmount = view.findViewById(R.id.evAmount);
-        cvQrCode = view.findViewById(R.id.cvQrCode);
         ivQrCode = view.findViewById(R.id.qrCode);
         tvQrCode = view.findViewById(R.id.tvQrCode);
         ivQrCodeFull = view.findViewById(R.id.qrCodeFull);
@@ -122,23 +120,16 @@ public class ReceiveFragment extends Fragment {
 
         bCopyAddress.setOnClickListener(v -> copyAddress());
         enableCopyAddress(false);
-        enableSubaddressButton(false);
 
-        evAmount.setOnNewAmountListener(new ExchangeView.OnNewAmountListener() {
-            @Override
-            public void onNewAmount(String xmr) {
-                Timber.d("new amount = %s", xmr);
-                generateQr();
-            }
+        evAmount.setOnNewAmountListener(xmr -> {
+            Timber.d("new amount = %s", xmr);
+            generateQr();
         });
 
-        evAmount.setOnFailedExchangeListener(new ExchangeView.OnFailedExchangeListener() {
-            @Override
-            public void onFailedExchange() {
-                if (isAdded()) {
-                    clearQR();
-                    Toast.makeText(getActivity(), getString(R.string.message_exchange_failed), Toast.LENGTH_LONG).show();
-                }
+        evAmount.setOnFailedExchangeListener(() -> {
+            if (isAdded()) {
+                clearQR();
+                Toast.makeText(getActivity(), getString(R.string.message_exchange_failed), Toast.LENGTH_LONG).show();
             }
         });
 
@@ -171,11 +162,9 @@ public class ReceiveFragment extends Fragment {
             }
         });
 
-        bSubaddress.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                enableSubaddressButton(false);
-                enableCopyAddress(false);
+        bSubaddress.setOnClickListener(v -> {
+            enableSubaddressButton(false);
+            enableCopyAddress(false);
 
                 final Runnable newAddress = new Runnable() {
                     public void run() {
@@ -183,26 +172,11 @@ public class ReceiveFragment extends Fragment {
                     }
                 };
 
-                tvAddress.animate().alpha(0).setDuration(250)
-                        .withEndAction(newAddress).start();
-            }
+            tvAddress.animate().alpha(0).setDuration(250)
+                    .withEndAction(newAddress).start();
         });
 
-        cvQrCode.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Helper.hideKeyboard(getActivity());
-                etDummy.requestFocus();
-                if (qrValid) {
-                    ivQrCodeFull.setImageBitmap(((BitmapDrawable) ivQrCode.getDrawable()).getBitmap());
-                    ivQrCodeFull.setVisibility(View.VISIBLE);
-                } else {
-                    evAmount.doExchange();
-                }
-            }
-        });
-
-        ivQrCodeFull.setOnClickListener(new View.OnClickListener() {
+        ivQrCode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 ivQrCodeFull.setImageBitmap(null);
@@ -267,6 +241,8 @@ public class ReceiveFragment extends Fragment {
     }
 
     private void setShareIntent() {
+      // TODO(loki): Crashes, should fix- but not high priority.
+      /*
         if (shareActionProvider != null) {
             if (qrValid) {
                 shareActionProvider.setShareIntent(getShareIntent());
@@ -274,6 +250,7 @@ public class ReceiveFragment extends Fragment {
                 shareActionProvider.setShareIntent(null);
             }
         }
+        */
     }
 
     private void saveQrCode() {
@@ -313,8 +290,13 @@ public class ReceiveFragment extends Fragment {
         return null;
     }
 
-    private void enableSubaddressButton(boolean enable) {
+    void enableSubaddressButton(boolean enable) {
         bSubaddress.setEnabled(enable);
+        if (enable) {
+            bSubaddress.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_settings_orange_24dp, 0, 0);
+        } else {
+            bSubaddress.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_settings_gray_24dp, 0, 0);
+        }
     }
 
     void copyAddress() {
@@ -364,13 +346,16 @@ public class ReceiveFragment extends Fragment {
         listenerCallback.setSubtitle(wallet.getAccountLabel());
         tvAddress.setText(wallet.getAddress());
         enableCopyAddress(true);
-        enableSubaddressButton(true);
         hideProgress();
         generateQr();
     }
 
     private void enableCopyAddress(boolean enable) {
-        bCopyAddress.setEnabled(enable);
+        bCopyAddress.setClickable(enable);
+        if (enable)
+            bCopyAddress.setImageResource(R.drawable.ic_content_copy_black_24dp);
+        else
+            bCopyAddress.setImageResource(R.drawable.ic_content_nocopy_black_24dp);
     }
 
     private void loadAndShow(String walletPath, String password) {
@@ -468,7 +453,7 @@ public class ReceiveFragment extends Fragment {
             Timber.d("CLEARQR");
             return;
         }
-        bcData = new BarcodeData(BarcodeData.Asset.XMR, address, null, notes, xmrAmount);
+        bcData = new BarcodeData(address, null, notes, xmrAmount);
         int size = Math.max(ivQrCode.getWidth(), ivQrCode.getHeight());
         Bitmap qr = generate(bcData.getUriString(), size, size);
         if (qr != null) {
@@ -480,7 +465,7 @@ public class ReceiveFragment extends Fragment {
     }
 
     public Bitmap generate(String text, int width, int height) {
-        if ((width <= 0) || (height <= 0)) return null;
+        if ((width <= 0) || (height <= 0) || text.isEmpty()) return null;
         Map<EncodeHintType, Object> hints = new HashMap<>();
         hints.put(EncodeHintType.CHARACTER_SET, "utf-8");
         hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
@@ -532,7 +517,7 @@ public class ReceiveFragment extends Fragment {
 
     private Bitmap getMoneroLogo() {
         if (logo == null) {
-            logo = Helper.getBitmap(getContext(), R.drawable.ic_monero_logo_b);
+            logo = Helper.getBitmap(getContext(), R.drawable.ic_loki_logo_b);
         }
         return logo;
     }
@@ -610,8 +595,6 @@ public class ReceiveFragment extends Fragment {
             super.onPostExecute(result);
             if (dialogOpened)
                 progressCallback.dismissProgressDialog();
-            if (!isAdded()) // never mind then
-                return;
             tvAddress.setText(newSubaddress);
             tvAddressLabel.setText(getString(R.string.generate_address_label_sub,
                     wallet.getNumSubaddresses() - 1));

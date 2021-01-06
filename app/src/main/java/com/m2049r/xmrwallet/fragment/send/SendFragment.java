@@ -18,7 +18,13 @@ package com.m2049r.xmrwallet.fragment.send;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.text.InputType;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
@@ -28,12 +34,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentStatePagerAdapter;
-import androidx.viewpager.widget.ViewPager;
+import android.widget.Toast;
 
 import com.m2049r.xmrwallet.OnBackPressedListener;
 import com.m2049r.xmrwallet.OnUriScannedListener;
@@ -42,8 +43,7 @@ import com.m2049r.xmrwallet.WalletActivity;
 import com.m2049r.xmrwallet.data.BarcodeData;
 import com.m2049r.xmrwallet.data.PendingTx;
 import com.m2049r.xmrwallet.data.TxData;
-import com.m2049r.xmrwallet.data.TxDataBtc;
-import com.m2049r.xmrwallet.data.UserNotes;
+import com.m2049r.xmrwallet.util.UserNotes;
 import com.m2049r.xmrwallet.layout.SpendViewPager;
 import com.m2049r.xmrwallet.model.PendingTransaction;
 import com.m2049r.xmrwallet.util.Helper;
@@ -62,7 +62,7 @@ public class SendFragment extends Fragment
         SendSuccessWizardFragment.Listener,
         OnBackPressedListener, OnUriScannedListener {
 
-    final static public int MIXIN = 10;
+    final static public int MIXIN = 9;
 
     private Listener activityCallback;
 
@@ -75,7 +75,7 @@ public class SendFragment extends Fragment
 
         void onPrepareSend(String tag, TxData data);
 
-        String getWalletName();
+        boolean verifyWalletPassword(String password);
 
         void onSend(UserNotes notes);
 
@@ -93,6 +93,8 @@ public class SendFragment extends Fragment
     }
 
     private EditText etDummy;
+    private Drawable arrowPrev;
+    private Drawable arrowNext;
 
     private View llNavBar;
     private DotBar dotBar;
@@ -123,6 +125,8 @@ public class SendFragment extends Fragment
         dotBar = view.findViewById(R.id.dotBar);
         bPrev = view.findViewById(R.id.bPrev);
         bNext = view.findViewById(R.id.bNext);
+        arrowPrev = getResources().getDrawable(R.drawable.ic_navigate_prev_white_24dp);
+        arrowNext = getResources().getDrawable(R.drawable.ic_navigate_next_white_24dp);
 
         ViewGroup llNotice = view.findViewById(R.id.llNotice);
         Notice.showAll(llNotice, ".*_send");
@@ -166,23 +170,13 @@ public class SendFragment extends Fragment
             }
         });
 
-        bPrev.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                spendViewPager.previous();
-            }
-        });
+        bPrev.setOnClickListener(v -> spendViewPager.previous());
 
-        bNext.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                spendViewPager.next();
-            }
-        });
+        bNext.setOnClickListener(v -> spendViewPager.next());
 
-        bDone.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                Timber.d("bDone.onClick");
-                activityCallback.onFragmentDone();
-            }
+        bDone.setOnClickListener(v -> {
+            Timber.d("bDone.onClick");
+            activityCallback.onFragmentDone();
         });
 
         updatePosition(0);
@@ -210,16 +204,16 @@ public class SendFragment extends Fragment
         CharSequence nextLabel = pagerAdapter.getPageTitle(position + 1);
         bNext.setText(nextLabel);
         if (nextLabel != null) {
-            bNext.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_navigate_next_white_24dp, 0);
+            bNext.setCompoundDrawablesWithIntrinsicBounds(null, null, arrowNext, null);
         } else {
-            bNext.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            bNext.setCompoundDrawables(null, null, null, null);
         }
         CharSequence prevLabel = pagerAdapter.getPageTitle(position - 1);
         bPrev.setText(prevLabel);
         if (prevLabel != null) {
-            bPrev.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_navigate_prev_white_24dp, 0, 0, 0);
+            bPrev.setCompoundDrawablesWithIntrinsicBounds(arrowPrev, null, null, null);
         } else {
-            bPrev.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            bPrev.setCompoundDrawables(null, null, null, null);
         }
     }
 
@@ -243,8 +237,7 @@ public class SendFragment extends Fragment
             activityCallback = (Listener) context;
             activityCallback.setOnUriScannedListener(this);
         } else {
-            throw new ClassCastException(context.toString()
-                    + " must implement Listener");
+            throw new ClassCastException(context.toString() + " must implement Listener");
         }
     }
 
@@ -259,7 +252,7 @@ public class SendFragment extends Fragment
 
     @Override
     public boolean onBackPressed() {
-        if (isComitted()) return true; // no going back
+        if (isCommitted()) return true; // no going back
         if (spendViewPager.getCurrentItem() == 0) {
             return false;
         } else {
@@ -278,41 +271,6 @@ public class SendFragment extends Fragment
             }
         }
         return false;
-    }
-
-    enum Mode {
-        XMR, BTC
-    }
-
-    Mode mode = Mode.XMR;
-
-    @Override
-    public void setMode(Mode aMode) {
-        if (mode != aMode) {
-            mode = aMode;
-            switch (aMode) {
-                case XMR:
-                    txData = new TxData();
-                    break;
-                case BTC:
-                    txData = new TxDataBtc();
-                    break;
-                default:
-                    throw new IllegalArgumentException("Mode " + String.valueOf(aMode) + " unknown!");
-            }
-            getView().post(new Runnable() {
-                @Override
-                public void run() {
-                    pagerAdapter.notifyDataSetChanged();
-                }
-            });
-            Timber.d("New Mode = %s", mode.toString());
-        }
-    }
-
-    @Override
-    public Mode getMode() {
-        return mode;
     }
 
     public class SpendPagerAdapter extends FragmentStatePagerAdapter {
@@ -364,35 +322,17 @@ public class SendFragment extends Fragment
         @Override
         public SendWizardFragment getItem(int position) {
             Timber.d("getItem(%d) CREATE", position);
-            Timber.d("Mode=%s", mode.toString());
-            if (mode == Mode.XMR) {
-                switch (position) {
-                    case POS_ADDRESS:
-                        return SendAddressWizardFragment.newInstance(SendFragment.this);
-                    case POS_AMOUNT:
-                        return SendAmountWizardFragment.newInstance(SendFragment.this);
-                    case POS_CONFIRM:
-                        return SendConfirmWizardFragment.newInstance(SendFragment.this);
-                    case POS_SUCCESS:
-                        return SendSuccessWizardFragment.newInstance(SendFragment.this);
-                    default:
-                        throw new IllegalArgumentException("no such send position(" + position + ")");
-                }
-            } else if (mode == Mode.BTC) {
-                switch (position) {
-                    case POS_ADDRESS:
-                        return SendAddressWizardFragment.newInstance(SendFragment.this);
-                    case POS_AMOUNT:
-                        return SendBtcAmountWizardFragment.newInstance(SendFragment.this);
-                    case POS_CONFIRM:
-                        return SendBtcConfirmWizardFragment.newInstance(SendFragment.this);
-                    case POS_SUCCESS:
-                        return SendBtcSuccessWizardFragment.newInstance(SendFragment.this);
-                    default:
-                        throw new IllegalArgumentException("no such send position(" + position + ")");
-                }
-            } else {
-                throw new IllegalStateException("Unknown mode!");
+            switch (position) {
+                case POS_ADDRESS:
+                    return SendAddressWizardFragment.newInstance(SendFragment.this);
+                case POS_AMOUNT:
+                    return SendAmountWizardFragment.newInstance(SendFragment.this);
+                case POS_CONFIRM:
+                    return SendConfirmWizardFragment.newInstance(SendFragment.this);
+                case POS_SUCCESS:
+                    return SendSuccessWizardFragment.newInstance(SendFragment.this);
+                default:
+                    throw new IllegalArgumentException("no such send position(" + position + ")");
             }
         }
 
@@ -454,7 +394,7 @@ public class SendFragment extends Fragment
         return data;
     }
 
-    boolean isComitted() {
+    boolean isCommitted() {
         return committedTx != null;
     }
 
@@ -491,7 +431,6 @@ public class SendFragment extends Fragment
     public Listener getActivityCallback() {
         return activityCallback;
     }
-
 
     // callbacks from send service
 
@@ -562,23 +501,6 @@ public class SendFragment extends Fragment
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.send_menu, menu);
         super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    // xmr.to info box
-    private static final String PREF_SHOW_XMRTO_ENABLED = "info_xmrto_enabled_send";
-
-    boolean showXmrtoEnabled = true;
-
-    void loadPrefs() {
-        SharedPreferences sharedPref = activityCallback.getPrefs();
-        showXmrtoEnabled = sharedPref.getBoolean(PREF_SHOW_XMRTO_ENABLED, true);
-    }
-
-    void saveXmrToPrefs() {
-        SharedPreferences sharedPref = activityCallback.getPrefs();
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putBoolean(PREF_SHOW_XMRTO_ENABLED, showXmrtoEnabled);
-        editor.apply();
     }
 
 }

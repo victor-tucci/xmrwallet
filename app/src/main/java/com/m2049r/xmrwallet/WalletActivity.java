@@ -16,6 +16,7 @@
 
 package com.m2049r.xmrwallet;
 
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -26,6 +27,14 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -36,20 +45,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.navigation.NavigationView;
 import com.m2049r.xmrwallet.data.BarcodeData;
 import com.m2049r.xmrwallet.data.TxData;
-import com.m2049r.xmrwallet.data.UserNotes;
 import com.m2049r.xmrwallet.dialog.CreditsFragment;
 import com.m2049r.xmrwallet.dialog.HelpFragment;
 import com.m2049r.xmrwallet.fragment.send.SendAddressWizardFragment;
@@ -60,9 +57,9 @@ import com.m2049r.xmrwallet.model.TransactionInfo;
 import com.m2049r.xmrwallet.model.Wallet;
 import com.m2049r.xmrwallet.model.WalletManager;
 import com.m2049r.xmrwallet.service.WalletService;
-import com.m2049r.xmrwallet.util.ColorHelper;
 import com.m2049r.xmrwallet.util.Helper;
 import com.m2049r.xmrwallet.util.MoneroThreadPoolExecutor;
+import com.m2049r.xmrwallet.util.UserNotes;
 import com.m2049r.xmrwallet.widget.Toolbar;
 
 import java.util.ArrayList;
@@ -91,6 +88,7 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
     private ActionBarDrawerToggle drawerToggle;
 
     private Toolbar toolbar;
+    private boolean needVerifyIdentity;
     private boolean requestStreetMode = false;
 
     private String password;
@@ -144,6 +142,7 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
 
     private void enableStreetMode(boolean enable) {
         if (enable) {
+            needVerifyIdentity = true;
             streetMode = getWallet().getDaemonBlockChainHeight();
         } else {
             streetMode = 0;
@@ -152,9 +151,11 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
                 getSupportFragmentManager().findFragmentByTag(WalletFragment.class.getName());
         if (walletFragment != null) walletFragment.resetDismissedTransactions();
         forceUpdate();
-        runOnUiThread(() -> {
-            if (getWallet() != null)
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
                 updateAccountsBalance();
+            }
         });
     }
 
@@ -199,6 +200,7 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
         if (extras != null) {
             acquireWakeLock();
             String walletId = extras.getString(REQUEST_ID);
+            needVerifyIdentity = extras.getBoolean(REQUEST_FINGERPRINT_USED);
             // we can set the streetmode height AFTER opening the wallet
             requestStreetMode = extras.getBoolean(REQUEST_STREETMODE);
             password = extras.getString(REQUEST_PW);
@@ -213,20 +215,6 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
     private void stopWalletService() {
         disconnectWalletService();
         releaseWakeLock();
-    }
-
-    private void onWalletRescan() {
-        try {
-            final WalletFragment walletFragment = (WalletFragment)
-                    getSupportFragmentManager().findFragmentByTag(WalletFragment.class.getName());
-            getWallet().rescanBlockchainAsync();
-            synced = false;
-            walletFragment.unsync();
-            invalidateOptionsMenu();
-        } catch (ClassCastException ex) {
-            Timber.d(ex.getLocalizedMessage());
-            // keep calm and carry on
-        }
     }
 
     @Override
@@ -255,26 +243,20 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem renameItem = menu.findItem(R.id.action_rename);
         if (renameItem != null)
-            renameItem.setEnabled(hasWallet() && getWallet().isSynchronized());
+            renameItem.setVisible(hasWallet() && getWallet().isSynchronized());
         MenuItem streetmodeItem = menu.findItem(R.id.action_streetmode);
         if (streetmodeItem != null)
             if (isStreetMode()) {
                 streetmodeItem.setIcon(R.drawable.gunther_csi_24dp);
             } else {
-                streetmodeItem.setIcon(R.drawable.gunther_24dp);
+                streetmodeItem.setIcon(R.drawable.gunther_lunther);
             }
-        final MenuItem rescanItem = menu.findItem(R.id.action_rescan);
-        if (rescanItem != null)
-            rescanItem.setEnabled(isSynced());
         return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.action_rescan:
-                onWalletRescan();
-                return true;
             case R.id.action_info:
                 onWalletDetails();
                 return true;
@@ -315,6 +297,11 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
     }
 
     private void updateStreetMode() {
+        if (isStreetMode()) {
+            toolbar.setBackgroundResource(R.drawable.backgound_toolbar_streetmode);
+        } else {
+            showNet();
+        }
         invalidateOptionsMenu();
     }
 
@@ -326,7 +313,7 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
     private void onDisableStreetMode() {
         Helper.promptPassword(WalletActivity.this, getWallet().getName(), false, new Helper.PasswordAction() {
             @Override
-            public void act(String walletName, String password, boolean fingerprintUsed) {
+            public void action(String walletName, String password, boolean fingerprintUsed) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -334,10 +321,6 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
                         updateStreetMode();
                     }
                 });
-            }
-
-            @Override
-            public void fail(String walletName, String password, boolean fingerprintUsed) {
             }
         });
     }
@@ -424,10 +407,10 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
                 toolbar.setBackgroundResource(R.drawable.backgound_toolbar_mainnet);
                 break;
             case NetworkType_Testnet:
-                toolbar.setBackgroundResource(ColorHelper.getThemedResourceId(this, R.attr.colorPrimaryDark));
+                toolbar.setBackgroundResource(R.color.colorPrimaryDark);
                 break;
             case NetworkType_Stagenet:
-                toolbar.setBackgroundResource(ColorHelper.getThemedResourceId(this, R.attr.colorPrimaryDark));
+                toolbar.setBackgroundResource(R.color.colorPrimaryDark);
                 break;
             default:
                 throw new IllegalStateException("Unsupported Network: " + WalletManager.getInstance().getNetworkType());
@@ -573,13 +556,18 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
     @Override
     public boolean onRefreshed(final Wallet wallet, final boolean full) {
         Timber.d("onRefreshed()");
-        runOnUiThread(() -> {
-            if (getWallet() != null)
+        runOnUiThread(new Runnable() {
+            public void run() {
                 updateAccountsBalance();
+            }
         });
         if (numAccounts != wallet.getNumAccounts()) {
             numAccounts = wallet.getNumAccounts();
-            runOnUiThread(this::updateAccountsList);
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    updateAccountsList();
+                }
+            });
         }
         try {
             final WalletFragment walletFragment = (WalletFragment)
@@ -661,7 +649,7 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
             haveWallet = true;
             invalidateOptionsMenu();
 
-            if (requestStreetMode) onEnableStreetMode();
+            enableStreetMode(requestStreetMode);
 
             final WalletFragment walletFragment = (WalletFragment)
                     getSupportFragmentManager().findFragmentById(R.id.fragment_container);
@@ -847,16 +835,17 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
                         final Bundle extras = new Bundle();
                         extras.putString(GenerateReviewFragment.REQUEST_TYPE, GenerateReviewFragment.VIEW_TYPE_WALLET);
 
-                        Helper.promptPassword(WalletActivity.this, getWallet().getName(), true, new Helper.PasswordAction() {
-                            @Override
-                            public void act(String walletName, String password, boolean fingerprintUsed) {
-                                replaceFragment(new GenerateReviewFragment(), null, extras);
-                            }
-
-                            @Override
-                            public void fail(String walletName, String password, boolean fingerprintUsed) {
-                            }
-                        });
+                        if (needVerifyIdentity) {
+                            Helper.promptPassword(WalletActivity.this, getWallet().getName(), true, new Helper.PasswordAction() {
+                                @Override
+                                public void action(String walletName, String password, boolean fingerprintUsed) {
+                                    replaceFragment(new GenerateReviewFragment(), null, extras);
+                                    needVerifyIdentity = false;
+                                }
+                            });
+                        } else {
+                            replaceFragment(new GenerateReviewFragment(), null, extras);
+                        }
 
                         break;
                     case DialogInterface.BUTTON_NEGATIVE:
@@ -866,7 +855,7 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
             }
         };
 
-        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(getString(R.string.details_alert_message))
                 .setPositiveButton(getString(R.string.details_alert_yes), dialogClickListener)
                 .setNegativeButton(getString(R.string.details_alert_no), dialogClickListener)
@@ -995,6 +984,12 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
     }
 
     @Override
+    public boolean verifyWalletPassword(String password) {
+        String walletPassword = Helper.getWalletPassword(getApplicationContext(), getWalletName(), password);
+        return walletPassword != null;
+    }
+
+    @Override
     public void onBackPressed() {
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
@@ -1051,23 +1046,21 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
     }
 
     void updateAccountsList() {
+        final Wallet wallet = getWallet();
         Menu menu = accountsView.getMenu();
         menu.removeGroup(R.id.accounts_list);
-        final Wallet wallet = getWallet();
-        if (wallet != null) {
-            final int n = wallet.getNumAccounts();
-            final boolean showBalances = (n > 1) && !isStreetMode();
-            for (int i = 0; i < n; i++) {
-                final String label = (showBalances ?
-                        getString(R.string.label_account, wallet.getAccountLabel(i), Helper.getDisplayAmount(wallet.getBalance(i), 2))
-                        : wallet.getAccountLabel(i));
-                final MenuItem item = menu.add(R.id.accounts_list, getAccountId(i), 2 * i, label);
-                item.setIcon(R.drawable.ic_account_balance_wallet_black_24dp);
-                if (i == wallet.getAccountIndex())
-                    item.setChecked(true);
-            }
-            menu.setGroupCheckable(R.id.accounts_list, true, true);
+        final int n = wallet.getNumAccounts();
+        final boolean showBalances = (n > 1) && !isStreetMode();
+        for (int i = 0; i < n; i++) {
+            final String label = (showBalances ?
+                    getString(R.string.label_account, wallet.getAccountLabel(i), Helper.getDisplayAmount(wallet.getBalance(i), 2))
+                    : wallet.getAccountLabel(i));
+            final MenuItem item = menu.add(R.id.accounts_list, getAccountId(i), 2 * i, label);
+            item.setIcon(R.drawable.ic_account_balance_wallet_black_24dp);
+            if (i == wallet.getAccountIndex())
+                item.setChecked(true);
         }
+        menu.setGroupCheckable(R.id.accounts_list, true, true);
     }
 
     @Override
@@ -1089,7 +1082,7 @@ public class WalletActivity extends BaseActivity implements WalletFragment.Liste
         final LayoutInflater li = LayoutInflater.from(this);
         final View promptsView = li.inflate(R.layout.prompt_rename, null);
 
-        final AlertDialog.Builder alertDialogBuilder = new MaterialAlertDialogBuilder(this);
+        final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         alertDialogBuilder.setView(promptsView);
 
         final EditText etRename = promptsView.findViewById(R.id.etRename);

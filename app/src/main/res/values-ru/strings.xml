@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="wallet_activity_name">Кошелек</string>
 
@@ -31,62 +30,14 @@
 
     <string name="label_receive_info_gen_qr_code">Нажмите для использования QR-кода</string>
 
-    <string name="info_xmrto_enabled">Доступны переводы в BTC, нажмите для доп. информации</string>
     <string name="info_ledger_enabled">Доступен Ledger, нажмите для доп. информации</string>
 
-    <string name="info_xmrto"><![CDATA[
-        <b>Вы ввели Bitcoin адрес.</b><br/>
-        <i>Отправляйте XMR, получатель получит BTC, используя сервис XMR.TO</i>
-    ]]></string>
-
-    <string name="info_send_xmrto_success_order_label">Заказ XMR.TO</string>
-
-    <string name="info_send_xmrto_success_btc">%1$s BTC</string>
-
-
-    <string name="info_send_xmrto_paid">Ожидание подтверждения</string>
-    <string name="info_send_xmrto_unpaid">Ожидание платежа</string>
-    <string name="info_send_xmrto_error">Ошибка XMR.TO (%1$s)</string>
-    <string name="info_send_xmrto_sent">BTC успешно отправлены!</string>
-    <string name="info_send_xmrto_query">Запрос &#8230;</string>
-
-    <string name="info_send_xmrto_parms"><![CDATA[
-        <b>Вы можете отправить %1$s &#8212; %2$s BTC</b>.<br/>
-        <i><b>XMR.TO</b> устанавливает курс обмена <b>%3$s BTC</b> <u>в данный момент</u></i>.
-    ]]></string>
-    <string name="info_send_xmrto_zeroconf"><![CDATA[
-        <i>Сумма до <b>%1$s BTC</b> будет отправлена <u>немедленно</u>!</i>
-    ]]></string>
-
-    <string name="send_available_btc">Баланс: %2$s BTC (%1$s XMR)</string>
-
-    <string name="info_paymentid_integrated">&#x2714; Интегрированный ID платежа</string>
+    <string name="info_paymentid_intergrated">Интегрированный ID платежа</string>
     <string name="info_prepare_tx">Подготовка транзакции</string>
-
-    <string name="label_send_progress_xmrto_create">Создание заказа XMR.TO</string>
-    <string name="label_send_progress_xmrto_query">Запрос заказа XMR.TO</string>
-    <string name="label_send_progress_create_tx">Подготовка транзакции Monero</string>
-
-    <string name="label_send_progress_queryparms">Запрос параметров XMR.TO</string>
-
-    <string name="label_generic_xmrto_error">XMR.TO ОШИБКА</string>
-    <string name="text_generic_xmrto_error">Код: %1$d</string>
-
-    <string name="text_retry">Нажмите, чтобы повторить попытку</string>
-    <string name="text_noretry_monero">Теперь мы застряли здесь!</string>
-    <string name="text_noretry">Ой-ой! Кажется XMR.TO недоступен в данный момент!</string>
-
-    <string name="text_send_btc_amount">%1$s BTC = %2$s XMR</string>
-    <string name="text_send_btc_rate">(Курс: %1$s BTC/XMR)</string>
-
-    <string name="label_send_btc_xmrto_info">Посетите xmr.to для получения помощи &amp;</string>
-    <string name="label_send_btc_xmrto_key_lb">Секретный ключ\nXMR.TO</string>
-    <string name="label_send_btc_xmrto_key">XMR.TO секретный ключ</string>
-    <string name="label_send_btc_address">Адрес получателя BTC</string>
-    <string name="label_send_btc_amount">Сумма</string>
 
     <string name="label_send_txid">ID транзакции</string>
     <string name="label_send_address">Адрес назначения</string>
+    <string name="label_send_payment_id">ID платежа</string>
     <string name="label_send_notes">Примечание</string>
 
     <string name="backup_progress">Выполняется резервное копирование</string>
@@ -103,7 +54,7 @@
     <string name="changepw_success">Изменение пароля выполено успешно</string>
 
     <string name="label_daemon">Удаленный узел</string>
-    <string name="status_wallet_loading">Загрузка кошелька &#8230;</string>
+    <string name="status_wallet_loading">Загрузка кошелека &#8230;</string>
     <string name="status_wallet_unloaded">Кошелек записан</string>
     <string name="status_wallet_unload_failed">Ошибка записи кошелека!</string>
     <string name="status_wallet_connecting">Подключение &#8230;</string>
@@ -115,8 +66,6 @@
 
     <string name="status_transaction_failed">Ошибка транзакции: %1$s</string>
 
-    <string name="send_xmrto_timeout">Ты слишком долго ждал, мой друг!</string>
-
     <string name="service_busy">Я все еще занят твоим кошельком &#8230;</string>
 
     <string name="prompt_rename">Переименовать %1$s</string>
@@ -125,6 +74,7 @@
     <string name="prompt_changepwB">Повторите пароль для %1$s</string>
     <string name="prompt_password">Пароль для %1$s</string>
     <string name="prompt_fingerprint_auth">Теперь вы можете открыть кошелек с помощью отпечатков пальцев.\nПожалуйста коснитесь датчика.</string>
+    <string name="prompt_send_password">Подтверждение пароля</string>
     <string name="prompt_open_wallet">Открытие кошелька&#8230;</string>
     <string name="bad_fingerprint">Отпечаток пальца не распознается. Попробуйте ещё раз.</string>
     <string name="bad_password">Неверный пароль!</string>
@@ -140,7 +90,7 @@
 
     <string name="xmr_unconfirmed_amount">+ %1$s XMR неподтвержденно</string>
 
-    <string name="service_description">Служба monerujo</string>
+    <string name="service_description">Служба Loki Wallet</string>
 
     <string name="status_synced">Синхронизировано:</string>
     <string name="status_remaining">Блоков осталось</string>
@@ -152,14 +102,12 @@
 
     <string name="label_copy_viewkey">Ключ просмотра</string>
     <string name="label_copy_address">Публичный адрес</string>
-    <string name="label_copy_xmrtokey">XMR.TO ключ</string>
     <string name="message_copy_viewkey">Ключ просмотра скопирован в буфер обмена!</string>
-    <string name="message_copy_xmrtokey">Ключ XMR.TO скопирован в буфер обмена!</string>
     <string name="message_copy_address">Адрес кошелька скопирован в буфер обмена!</string>
     <string name="message_copy_txid">ID транзакции копирован в буфер обмена!</string>
     <string name="message_nocopy">Копирование недоступно по соображениям безопасности!</string>
 
-    <string name="message_exchange_failed">Не удается получить курс обмена!\nИспользуйте XMR/XMR или повторите попытку</string>
+    <string name="message_exchange_failed">Не удается получить курс обмена!\nИспользуйте Loki или повторите попытку</string>
 
     <string name="generate_title">Создать кошелек</string>
     <string name="generate_name_hint">Имя кошелька</string>
@@ -169,10 +117,10 @@
         <strong>Аутентификация по отпечаткам пальцев</strong>
         <p>С поддержкой аутентификации по отпечаткам пальцев, вы можете просматривать баланс и получать средства
         без ввода пароля.</p>
-        <p>Но для дополнительной безопасности, monerujo потребует от вас ввести пароль при
+        <p>Но для дополнительной безопасности, Loki Wallet потребует от вас ввести пароль при
         просмотре деталей кошелька или отправке средств.</p>
         <strong>Предупреждение системы безопасности</strong>
-        <p>monerujo хочет напомнить вам, что любой, кто может получить ваш отпечаток пальца, будет
+        <p>Loki Wallet хочет напомнить вам, что любой, кто может получить ваш отпечаток пальца, будет
         обладать возможностью, заглянуть в баланс вашего кошелька.</p>
         <p>Например, злоумышленник может заглянуть в ваш кошелек, когда вы спите.</p>
         <strong>Вы уверены, что хотите включить эту функцию?</strong>
@@ -211,10 +159,12 @@
     <string name="generate_check_address">Введите действующий адрес</string>
     <string name="generate_check_mnemonic">Введите вашу мнемоническую фразу</string>
 
+    <string name="send_paymentid_hint">ID платежа (необязательно)</string>
+    <string name="send_amount_hint">0.00</string>
     <string name="send_notes_hint">Персональная заметка (необязательно)</string>
     <string name="send_generate_paymentid_hint">Генерация</string>
-    <string name="send_send_label">Потратьте мои сладкие Moneroj</string>
-    <string name="send_send_timed_label">Потратьте мои сладкие Moneroj (%1$s)</string>
+    <string name="send_send_label">Потратьте мои сладкие Loki</string>
+    <string name="send_send_timed_label">Потратьте мои сладкие Loki (%1$s)</string>
     <string name="send_qr_invalid">Это не QR-код</string>
     <string name="send_qr_address_invalid">Недопустимый платеж по QR-коду</string>
     <string name="send_address_invalid">Недопустимый адрес</string>
@@ -226,9 +176,7 @@
     <string name="send_success_title">Готово</string>
 
     <string name="send_amount_label">Сумма</string>
-    <string name="send_fee_btc_label">Комиссия (XMR)</string>
     <string name="send_fee_label">Комиссия</string>
-    <string name="send_total_btc_label">Всего (XMR)</string>
     <string name="send_total_label">Всего</string>
 
     <string name="send_amount">%1$s XMR</string>
@@ -246,15 +194,15 @@
     <string name="tx_id">TX ID</string>
     <string name="tx_key">Ключ TX</string>
     <string name="tx_destination">Адресат</string>
-    <string name="tx_destination_btc">Адресат\n(BTC)</string>
     <string name="tx_paymentId">ID платежа</string>
     <string name="tx_blockheight">Блок</string>
     <string name="tx_amount">Сумма</string>
-    <string name="tx_amount_btc">Сумма\n(BTC)</string>
     <string name="tx_fee">Комиссия</string>
     <string name="tx_transfers">Переводы</string>
     <string name="tx_notes">Заметки</string>
     <string name="tx_notes_hint">(необязательно)</string>
+    <string name="tx_button_notes">Сохранено</string>
+    <string name="tx_notes_set_failed">Ошибка сохранения заметки</string>
     <string name="tx_title">Подробно</string>
 
     <string name="tx_pending">ОЖИДАНИЕ</string>
@@ -262,6 +210,8 @@
 
     <string name="receive_amount_hint">Сумма</string>
     <string name="receive_cannot_open">Не удалось открыть кошелек!</string>
+    <string name="receive_paymentid_invalid">Система счисления - 16 или 64(0&#8211;9,a&#8211;f)</string>
+    <string name="receive_integrated_paymentid_invalid">Должно быть пустым со встроенным адресом</string>
 
     <string name="receive_amount_too_big">Max. %1$s</string>
     <string name="receive_amount_negative">Min. 0</string>
@@ -314,7 +264,8 @@
     <string name="nfc_tag_size">Метка предоставляет %1$d байт, но нам нужно %2$d!</string>
     <string name="nfc_tag_read_undef">Я не понимаю эту метку!</string>
     <string name="nfc_tag_read_what">Я не знаю, чего ты хочешь!</string>
-    <string name="nfc_tag_tap">NFC доступен!</string>
+    <string name="nfc_tag_read_success">Чтение метки завершено успешно</string>
+    <string name="nfc_tag_tap">NFC via Sticker Tag доступен!</string>
 
     <string name="receive_desc_hint">Описание (необязательно)</string>
 
@@ -356,18 +307,8 @@
     <string name="label_test">Проверка</string><!--note: as in "Test a network connection"-->
 
     <string name="backup_success">Резервное копирование успешно</string>
-
-    <string name="send_address_resolve_bip70">Размещение URI платежа&#8230;</string>
-    <string name="send_address_not_bip70">Не удалось разрешить URI платежа</string>
-    <string name="send_address_bip70">URI разрешенного платежа &#x2714;</string>
     <!-- please verify this means "Receiver" or "Recipient" as in "Receiver in the transaction" -->
     <string name="send_address_hint">Получатель</string>
-
-    <string name="xmrto_error_001">XMR.TO недоступен - повторите попытку позже</string>
-    <string name="xmrto_error_004">Сумма BTC выходит за доступные пределы</string>
-    <string name="xmrto_error_010">Неверный или устаревший платежный URL</string>
-    <string name="xmrto_error_012">Превышен лимит запросов</string>
-
     <string name="street_sweep_amount">ВСЕ!</string> <!-- as in: "everything in the account" = "all the money" -->
 
     <string name="menu_ledger_seed">Преобразовать фразу Ledger</string>
@@ -375,41 +316,4 @@
     <string name="prompt_ledger_phrase">Пароль Ledger (необязательно)</string>
     <string name="bad_ledger_seed">Ошибка фразы Ledger!</string>
     <string name="prompt_ledger_seed_warn">Если вы пытаетесь ввести сюда фразу Ledger, это серьезная угроза для вашей безопасности!</string>
-
-    <string name="label_restoreheight">Восстановить высоту</string> <!-- Restore Height -->
-
-    <string name="toast_ledger_start_app">Запуск приложения Monero на %1$s</string>
-
-    <string name="menu_rescan">Rescan!</string>
-
-    <string name="onboarding_agree">I get it!</string>
-    <string name="onboarding_button_next">Next</string>
-    <string name="onboarding_button_ready">I\'m ready!</string>
-
-    <string name="onboarding_welcome_title">Welcome to Monerujo!</string>
-    <string name="onboarding_welcome_information">This app allows you to create and use Monero wallets. You can store your sweet moneroj in them.</string>
-    <string name="onboarding_seed_title">Keep your seed safe</string>
-    <string name="onboarding_seed_information">The seed grants full access to whoever has it. If you lose it, we cannot help you recover it and you lose your beloved moneroj.</string>
-    <string name="onboarding_xmrto_title">Send Bitcoin</string>
-    <string name="onboarding_xmrto_information">Monerujo has XMR.to support built-in. Just paste or scan a Bitcoin address and you\'ll be sending BTC by spending XMR.</string>
-    <string name="onboarding_nodes_title">Nodes, your way</string>
-    <string name="onboarding_nodes_information">Nodes connect you to the Monero network. Choose between public nodes or go full cypherpunk using your own.</string>
-    <string name="onboarding_fpsend_title">Send with fingerprint</string>
-    <string name="onboarding_fpsend_information">You\'re now able to send XMR with just your fingerprint if you enabled it. To request the password, just disable fingerprint access.</string>
-
-    <string name="menu_daynight">Dark Mode</string>
-    <string-array name="daynight_themes">
-        <item>Auto</item>
-        <item>Day</item>
-        <item>Night</item>
-    </string-array>
-    <string name="gunther_says">There is nothing here\nPlease create or restore a wallet</string>
-
-    <string name="menu_default_nodes">Restore default nodes</string>
-    <string name="toast_default_nodes">Restoring already in progress…</string>
-
-    <string name="node_updated_now">Last Block: %1$d seconds ago</string>
-    <string name="node_updated_mins">Last Block: %1$d minutes ago</string>
-    <string name="node_updated_hours">Last Block: %1$d hours ago</string>
-    <string name="node_updated_days">Last Block: %1$d days ago</string>
 </resources>

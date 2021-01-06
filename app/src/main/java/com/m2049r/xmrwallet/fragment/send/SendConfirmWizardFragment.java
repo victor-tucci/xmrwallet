@@ -16,25 +16,29 @@
 
 package com.m2049r.xmrwallet.fragment.send;
 
+import android.app.Activity;
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.design.widget.TextInputLayout;
+import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.textfield.TextInputLayout;
+import com.m2049r.xmrwallet.BuildConfig;
 import com.m2049r.xmrwallet.R;
 import com.m2049r.xmrwallet.data.TxData;
-import com.m2049r.xmrwallet.data.UserNotes;
 import com.m2049r.xmrwallet.model.PendingTransaction;
 import com.m2049r.xmrwallet.model.Wallet;
 import com.m2049r.xmrwallet.util.Helper;
+import com.m2049r.xmrwallet.util.UserNotes;
 
 import timber.log.Timber;
 
@@ -61,11 +65,10 @@ public class SendConfirmWizardFragment extends SendWizardFragment implements Sen
         void commitTransaction();
 
         void disposeTransaction();
-
-        SendFragment.Mode getMode();
     }
 
     private TextView tvTxAddress;
+    private TextView tvTxPaymentId;
     private TextView tvTxNotes;
     private TextView tvTxAmount;
     private TextView tvTxFee;
@@ -85,6 +88,7 @@ public class SendConfirmWizardFragment extends SendWizardFragment implements Sen
                 R.layout.fragment_send_confirm, container, false);
 
         tvTxAddress = view.findViewById(R.id.tvTxAddress);
+        tvTxPaymentId = view.findViewById(R.id.tvTxPaymentId);
         tvTxNotes = view.findViewById(R.id.tvTxNotes);
         tvTxAmount = view.findViewById(R.id.tvTxAmount);
         tvTxFee = view.findViewById(R.id.tvTxFee);
@@ -96,13 +100,10 @@ public class SendConfirmWizardFragment extends SendWizardFragment implements Sen
 
         bSend = view.findViewById(R.id.bSend);
         bSend.setEnabled(false);
-        bSend.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Timber.d("bSend.setOnClickListener");
-                bSend.setEnabled(false);
-                preSend();
-            }
+        bSend.setOnClickListener(v -> {
+            Timber.d("bSend.setOnClickListener");
+            bSend.setEnabled(false);
+            preSend();
         });
         return view;
     }
@@ -137,7 +138,7 @@ public class SendConfirmWizardFragment extends SendWizardFragment implements Sen
 
     void send() {
         sendListener.commitTransaction();
-        getActivity().runOnUiThread(() -> pbProgressSend.setVisibility(View.VISIBLE));
+        pbProgressSend.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -153,7 +154,7 @@ public class SendConfirmWizardFragment extends SendWizardFragment implements Sen
     }
 
     private void showAlert(String title, String message) {
-        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(getActivity());
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setCancelable(true).
                 setTitle(title).
                 setMessage(message).
@@ -186,6 +187,12 @@ public class SendConfirmWizardFragment extends SendWizardFragment implements Sen
 
         final TxData txData = sendListener.getTxData();
         tvTxAddress.setText(txData.getDestinationAddress());
+        String paymentId = txData.getPaymentId();
+        if ((paymentId != null) && (!paymentId.isEmpty())) {
+            tvTxPaymentId.setText(txData.getPaymentId());
+        } else {
+            tvTxPaymentId.setText("-");
+        }
         UserNotes notes = sendListener.getTxData().getUserNotes();
         if ((notes != null) && (!notes.note.isEmpty())) {
             tvTxNotes.setText(notes.note);
@@ -221,18 +228,90 @@ public class SendConfirmWizardFragment extends SendWizardFragment implements Sen
     }
 
     public void preSend() {
-        Helper.promptPassword(getContext(), getActivityCallback().getWalletName(), false, new Helper.PasswordAction() {
+        final Activity activity = getActivity();
+        View promptsView = getLayoutInflater().inflate(R.layout.prompt_password, null);
+        android.app.AlertDialog.Builder alertDialogBuilder = new android.app.AlertDialog.Builder(activity);
+        alertDialogBuilder.setView(promptsView);
+
+        final TextInputLayout etPassword = promptsView.findViewById(R.id.etPassword);
+        etPassword.setHint(getString(R.string.prompt_send_password));
+
+        etPassword.getEditText().addTextChangedListener(new TextWatcher() {
             @Override
-            public void act(String walletName, String password, boolean fingerprintUsed) {
-                send();
+            public void afterTextChanged(Editable s) {
+                if (etPassword.getError() != null) {
+                    etPassword.setError(null);
+                }
             }
 
-            public void fail(String walletName, String password, boolean fingerprintUsed) {
-                getActivity().runOnUiThread(() -> {
-                    bSend.setEnabled(true); // allow to try again
-                });
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
             }
         });
+
+        alertDialogBuilder
+                .setCancelable(false)
+                .setPositiveButton(getString(R.string.label_ok), (dialog, id) -> {
+                    String pass = etPassword.getEditText().getText().toString();
+                    if (getActivityCallback().verifyWalletPassword(pass)) {
+                        dialog.dismiss();
+                        Helper.hideKeyboardAlways(activity);
+                        send();
+                    } else {
+                        etPassword.setError(getString(R.string.bad_password));
+                    }
+                })
+                .setNegativeButton(getString(R.string.label_cancel), (dialog, id) -> {
+                    Helper.hideKeyboardAlways(activity);
+                    dialog.cancel();
+                    bSend.setEnabled(true); // allow to try again
+                });
+
+        final android.app.AlertDialog passwordDialog = alertDialogBuilder.create();
+        passwordDialog.setOnShowListener(dialog -> {
+            Button button = ((android.app.AlertDialog) dialog).getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+            button.setOnClickListener(view -> {
+                String pass = etPassword.getEditText().getText().toString();
+                if (getActivityCallback().verifyWalletPassword(pass)) {
+                    Helper.hideKeyboardAlways(activity);
+                    passwordDialog.dismiss();
+                    send();
+                } else {
+                    etPassword.setError(getString(R.string.bad_password));
+                }
+            });
+        });
+
+        Helper.showKeyboard(passwordDialog);
+
+        // accept keyboard "ok"
+        etPassword.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if ((event != null && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) && (event.getAction() == KeyEvent.ACTION_DOWN))
+                        || (actionId == EditorInfo.IME_ACTION_DONE)) {
+                    String pass = etPassword.getEditText().getText().toString();
+                    if (getActivityCallback().verifyWalletPassword(pass)) {
+                        Helper.hideKeyboardAlways(activity);
+                        passwordDialog.dismiss();
+                        send();
+                    } else {
+                        etPassword.setError(getString(R.string.bad_password));
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        if (Helper.preventScreenshot()) {
+            passwordDialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+        }
+
+        passwordDialog.show();
     }
 
     // creates a pending transaction and calls us back with transactionCreated()

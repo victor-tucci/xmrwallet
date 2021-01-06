@@ -17,7 +17,7 @@
 package com.m2049r.xmrwallet.layout;
 
 import android.content.Context;
-import androidx.viewpager.widget.ViewPager;
+import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 

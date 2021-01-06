@@ -37,7 +37,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
                 android:layout_marginStart="16dp"
-                android:layout_toStartOf="@+id/ibRenew">
+                android:layout_toStartOf="@+id/ibOption">
 
                 <ProgressBar
                     android:id="@+id/pbNode"
@@ -49,7 +49,7 @@
                     android:id="@+id/llNode"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="?android:attr/selectableItemBackground"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
                     android:gravity="start|center_vertical"
                     android:orientation="vertical">
 
@@ -58,8 +58,8 @@
                         style="@style/MoneroText.PosAmount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/ic_refresh_black_24dp"
                         android:drawablePadding="8dp"
-                        app:drawableStartCompat="@drawable/ic_refresh_black_24dp"
                         tools:text="monero-v9.monerujo.io" />
 
                     <TextView
@@ -68,12 +68,12 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="32dp"
-                        tools:text="128.130.233.151:18089" />
+                        tools:text="128.130.233.151:22020" />
                 </LinearLayout>
             </FrameLayout>
 
             <ImageButton
-                android:id="@+id/ibRenew"
+                android:id="@+id/ibOption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
@@ -81,7 +81,7 @@
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:gravity="center"
                 android:padding="12dp"
-                android:src="@drawable/ic_renew_24dp" />
+                android:src="@drawable/ic_search_orange_24dp" />
         </RelativeLayout>
 
         <EditText
@@ -98,35 +98,26 @@
             android:padding="8dp"
             android:text="@string/label_login_wallets" />
 
-        <FrameLayout
+        <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
             <ImageView
                 android:id="@+id/ivGunther"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:scaleType="centerCrop" />
-
-            <TextView
-                android:id="@+id/tvGuntherSays"
-                style="@style/MoneroText.Info"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|center"
-                android:layout_marginBottom="128dp"
-                android:gravity="center"
-                android:lineSpacingMultiplier="1.2"
-                android:text="@string/gunther_says" />
+                android:layout_height="match_parent"
+                android:adjustViewBounds="true"
+                android:layout_gravity="center"
+                android:padding="48dp" />
 
-            <androidx.recyclerview.widget.RecyclerView
+            <android.support.v7.widget.RecyclerView xmlns:tools="http://schemas.android.com/tools"
                 android:id="@+id/list"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:paddingBottom="72dp"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:layoutManager="android.support.v7.widget.LinearLayoutManager"
                 tools:listitem="@layout/item_wallet" />
 
         </FrameLayout>

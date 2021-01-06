@@ -17,6 +17,8 @@
 package com.m2049r.xmrwallet.layout;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,13 +26,8 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.m2049r.xmrwallet.R;
 import com.m2049r.xmrwallet.data.NodeInfo;
-import com.m2049r.xmrwallet.util.ColorHelper;
-import com.m2049r.xmrwallet.util.Helper;
 
 import java.net.HttpURLConnection;
 import java.text.SimpleDateFormat;
@@ -38,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -46,8 +44,6 @@ public class NodeInfoAdapter extends RecyclerView.Adapter<NodeInfoAdapter.ViewHo
 
     public interface OnInteractionListener {
         void onInteraction(View view, NodeInfo item);
-
-        void onLongInteraction(View view, NodeInfo item);
     }
 
     private final List<NodeInfo> nodeItems = new ArrayList<>();
@@ -110,9 +106,8 @@ public class NodeInfoAdapter extends RecyclerView.Adapter<NodeInfoAdapter.ViewHo
         notifyDataSetChanged();
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
+    class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         final ImageButton ibBookmark;
-        final View pbBookmark;
         final TextView tvName;
         final TextView tvIp;
         final ImageView ivPing;
@@ -121,49 +116,39 @@ public class NodeInfoAdapter extends RecyclerView.Adapter<NodeInfoAdapter.ViewHo
         ViewHolder(View itemView) {
             super(itemView);
             ibBookmark = itemView.findViewById(R.id.ibBookmark);
-            pbBookmark = itemView.findViewById(R.id.pbBookmark);
             tvName = itemView.findViewById(R.id.tvName);
             tvIp = itemView.findViewById(R.id.tvAddress);
             ivPing = itemView.findViewById(R.id.ivPing);
-            ibBookmark.setOnClickListener(v -> {
-                nodeItem.toggleFavourite();
-                showStar();
-                if (!nodeItem.isFavourite()) {
-                    nodeItem.setSelected(false);
-                    notifyDataSetChanged();
+            ibBookmark.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    nodeItem.toggleFavourite();
+                    showStar();
                 }
             });
-            itemView.setOnClickListener(this);
-            itemView.setOnLongClickListener(this);
         }
 
         private void showStar() {
             if (nodeItem.isFavourite()) {
-                ibBookmark.setImageResource(R.drawable.ic_favorite_24dp);
+                ibBookmark.setImageResource(R.drawable.ic_bookmark_24dp);
             } else {
-                ibBookmark.setImageResource(R.drawable.ic_favorite_border_24dp);
+                ibBookmark.setImageResource(R.drawable.ic_bookmark_border_24dp);
             }
         }
 
         void bind(int position) {
             nodeItem = nodeItems.get(position);
             tvName.setText(nodeItem.getName());
+            final String ts = TS_FORMATTER.format(new Date(nodeItem.getTimestamp() * 1000));
             ivPing.setImageResource(getPingIcon(nodeItem));
-            if (nodeItem.isTested()) {
-                if (nodeItem.isValid()) {
-                    Helper.showTimeDifference(tvIp, nodeItem.getTimestamp());
-                } else {
-                    tvIp.setText(getResponseErrorText(context, nodeItem.getResponseCode()));
-                    tvIp.setTextColor(ColorHelper.getThemedColor(tvIp.getContext(), R.attr.colorError));
-                }
+            if (nodeItem.isValid()) {
+                tvIp.setText(context.getString(R.string.node_height, ts));
             } else {
-                tvIp.setText(context.getResources().getString(R.string.node_testing, nodeItem.getHostAddress()));
+                tvIp.setText(getResponseErrorText(context, nodeItem.getResponseCode()));
             }
-            itemView.setSelected(nodeItem.isSelected());
+            itemView.setOnClickListener(this);
             itemView.setClickable(itemsClickable);
-            itemView.setEnabled(itemsClickable);
             ibBookmark.setClickable(itemsClickable);
-            pbBookmark.setVisibility(nodeItem.isSelecting() ? View.VISIBLE : View.INVISIBLE);
             showStar();
         }
 
@@ -172,23 +157,9 @@ public class NodeInfoAdapter extends RecyclerView.Adapter<NodeInfoAdapter.ViewHo
             if (listener != null) {
                 int position = getAdapterPosition(); // gets item position
                 if (position != RecyclerView.NO_POSITION) { // Check if an item was deleted, but the user clicked it before the UI removed it
-                    final NodeInfo node = nodeItems.get(position);
-                    node.setSelecting(true);
-                    allowClick(false);
-                    listener.onInteraction(view, node);
+                    listener.onInteraction(view, nodeItems.get(position));
                 }
             }
-        }
-
-        @Override
-        public boolean onLongClick(View view) {
-            if (listener != null) {
-                int position = getAdapterPosition(); // gets item position
-                if (position != RecyclerView.NO_POSITION) { // Check if an item was deleted, but the user clicked it before the UI removed it
-                    listener.onLongInteraction(view, nodeItems.get(position));
-                }
-            }
-            return true;
         }
     }
 
@@ -199,16 +170,16 @@ public class NodeInfoAdapter extends RecyclerView.Adapter<NodeInfoAdapter.ViewHo
         if (nodeInfo.isValid()) {
             final double ping = nodeInfo.getResponseTime();
             if (ping < NodeInfo.PING_GOOD) {
-                return R.drawable.ic_signal_wifi_4_bar_24dp;
+                return R.drawable.ic_signal_wifi_4_bar_black_24dp;
             } else if (ping < NodeInfo.PING_MEDIUM) {
-                return R.drawable.ic_signal_wifi_3_bar_24dp;
+                return R.drawable.ic_signal_wifi_3_bar_black_24dp;
             } else if (ping < NodeInfo.PING_BAD) {
-                return R.drawable.ic_signal_wifi_2_bar_24dp;
+                return R.drawable.ic_signal_wifi_2_bar_black_24dp;
             } else {
-                return R.drawable.ic_signal_wifi_1_bar_24dp;
+                return R.drawable.ic_signal_wifi_1_bar_black_24dp;
             }
         } else {
-            return R.drawable.ic_signal_wifi_off_24dp;
+            return R.drawable.ic_signal_wifi_off_black_24dp;
         }
     }
 

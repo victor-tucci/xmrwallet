@@ -16,6 +16,7 @@
 
 package com.m2049r.xmrwallet;
 
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -29,6 +30,10 @@ import android.hardware.usb.UsbManager;
 import android.media.MediaScannerConnection;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -38,15 +43,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatDelegate;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.m2049r.xmrwallet.data.DefaultNodes;
 import com.m2049r.xmrwallet.data.Node;
 import com.m2049r.xmrwallet.data.NodeInfo;
 import com.m2049r.xmrwallet.dialog.AboutFragment;
@@ -59,13 +55,10 @@ import com.m2049r.xmrwallet.model.NetworkType;
 import com.m2049r.xmrwallet.model.Wallet;
 import com.m2049r.xmrwallet.model.WalletManager;
 import com.m2049r.xmrwallet.service.WalletService;
-import com.m2049r.xmrwallet.util.ColorHelper;
-import com.m2049r.xmrwallet.util.DayNightMode;
 import com.m2049r.xmrwallet.util.Helper;
 import com.m2049r.xmrwallet.util.KeyStoreHelper;
 import com.m2049r.xmrwallet.util.LocaleHelper;
 import com.m2049r.xmrwallet.util.MoneroThreadPoolExecutor;
-import com.m2049r.xmrwallet.util.NightmodeHelper;
 import com.m2049r.xmrwallet.widget.Toolbar;
 
 import java.io.File;
@@ -75,8 +68,8 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -92,10 +85,11 @@ public class LoginActivity extends BaseActivity
     private static final String GENERATE_STACK = "gen";
 
     private static final String NODES_PREFS_NAME = "nodes";
-    private static final String SELECTED_NODE_PREFS_NAME = "selected_node";
-    private static final String PREF_DAEMON_TESTNET = "daemon_testnet";
     private static final String PREF_DAEMON_STAGENET = "daemon_stagenet";
     private static final String PREF_DAEMON_MAINNET = "daemon_mainnet";
+    private static final String DEFAULT_DAEMONLIST_MAINNET =
+        "doopool.xyz:22020;nodes.hashvault.pro:22023;imaginary.stream:22023;node.loki-pool.com:18081;public.loki.foundation:22023";
+    private static final String DEFAULT_DAEMONLIST_STAGENET = "lokitestnet.com:38157/testnet";
 
     private NodeInfo node = null;
 
@@ -108,21 +102,10 @@ public class LoginActivity extends BaseActivity
 
     @Override
     public void setNode(NodeInfo node) {
-        setNode(node, true);
-    }
-
-    private void setNode(NodeInfo node, boolean save) {
-        if (node != this.node) {
-            if ((node != null) && (node.getNetworkType() != WalletManager.getInstance().getNetworkType()))
-                throw new IllegalArgumentException("network type does not match");
-            this.node = node;
-            for (NodeInfo nodeInfo : favouriteNodes) {
-                nodeInfo.setSelected(nodeInfo == node);
-            }
-            WalletManager.getInstance().setDaemon(node);
-            if (save)
-                saveSelectedNode();
-        }
+        if ((node != null) && (node.getNetworkType() != WalletManager.getInstance().getNetworkType()))
+            throw new IllegalArgumentException("network type does not match");
+        this.node = node;
+        WalletManager.getInstance().setDaemon(node);
     }
 
     @Override
@@ -131,22 +114,7 @@ public class LoginActivity extends BaseActivity
     }
 
     @Override
-    public Set<NodeInfo> getOrPopulateFavourites() {
-        if (favouriteNodes.isEmpty()) {
-            for (DefaultNodes node : DefaultNodes.values()) {
-                NodeInfo nodeInfo = NodeInfo.fromString(node.getUri());
-                if (nodeInfo != null) {
-                    nodeInfo.setFavourite(true);
-                    favouriteNodes.add(nodeInfo);
-                }
-            }
-            saveFavourites();
-        }
-        return favouriteNodes;
-    }
-
-    @Override
-    public void setFavouriteNodes(Collection<NodeInfo> nodes) {
+    public void setFavouriteNodes(Set<NodeInfo> nodes) {
         Timber.d("adding %d nodes", nodes.size());
         favouriteNodes.clear();
         for (NodeInfo node : nodes) {
@@ -154,46 +122,52 @@ public class LoginActivity extends BaseActivity
             if (node.isFavourite())
                 favouriteNodes.add(node);
         }
+        if (favouriteNodes.isEmpty() && (!nodes.isEmpty())) { // no favourites - pick best ones
+            List<NodeInfo> nodeList = new ArrayList<>(nodes);
+            Collections.sort(nodeList, NodeInfo.BestNodeComparator);
+            int i = 0;
+            for (NodeInfo node : nodeList) {
+                Timber.d("adding %s", node);
+                node.setFavourite(true);
+                favouriteNodes.add(node);
+                if (++i >= 3) break; // add max first 3 nodes
+            }
+            Toast.makeText(this, getString(R.string.node_nobookmark, i), Toast.LENGTH_LONG).show();
+        }
         saveFavourites();
     }
 
     private void loadFavouritesWithNetwork() {
-        Helper.runWithNetwork(() -> {
-            loadFavourites();
-            return true;
+        Helper.runWithNetwork(new Helper.Action() {
+            @Override
+            public boolean run() {
+                loadFavourites();
+                return true;
+            }
         });
     }
 
     private void loadFavourites() {
         Timber.d("loadFavourites");
         favouriteNodes.clear();
-        final String selectedNodeId = getSelectedNodeId();
         Map<String, ?> storedNodes = getSharedPreferences(NODES_PREFS_NAME, Context.MODE_PRIVATE).getAll();
         for (Map.Entry<String, ?> nodeEntry : storedNodes.entrySet()) {
-            if (nodeEntry != null) { // just in case, ignore possible future errors
-                final String nodeId = (String) nodeEntry.getValue();
-                final NodeInfo addedNode = addFavourite(nodeId);
-                if (addedNode != null) {
-                    if (nodeId.equals(selectedNodeId)) {
-                        addedNode.setSelected(true);
-                    }
-                }
-            }
+            if (nodeEntry != null) // just in case, ignore possible future errors
+                addFavourite((String) nodeEntry.getValue());
         }
         if (storedNodes.isEmpty()) { // try to load legacy list & remove it (i.e. migrate the data once)
             SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
             switch (WalletManager.getInstance().getNetworkType()) {
                 case NetworkType_Mainnet:
+                    loadLegacyList(DEFAULT_DAEMONLIST_MAINNET);
                     loadLegacyList(sharedPref.getString(PREF_DAEMON_MAINNET, null));
                     sharedPref.edit().remove(PREF_DAEMON_MAINNET).apply();
                     break;
                 case NetworkType_Stagenet:
+                case NetworkType_Testnet:
+                    loadLegacyList(DEFAULT_DAEMONLIST_STAGENET);
                     loadLegacyList(sharedPref.getString(PREF_DAEMON_STAGENET, null));
                     sharedPref.edit().remove(PREF_DAEMON_STAGENET).apply();
-                    break;
-                case NetworkType_Testnet:
-                    loadLegacyList(sharedPref.getString(PREF_DAEMON_TESTNET, null));
-                    sharedPref.edit().remove(PREF_DAEMON_TESTNET).apply();
                     break;
                 default:
                     throw new IllegalStateException("unsupported net " + WalletManager.getInstance().getNetworkType());
@@ -202,12 +176,13 @@ public class LoginActivity extends BaseActivity
     }
 
     private void saveFavourites() {
+        List<Node> favourites = new ArrayList<>();
         Timber.d("SAVE");
         SharedPreferences.Editor editor = getSharedPreferences(NODES_PREFS_NAME, Context.MODE_PRIVATE).edit();
         editor.clear();
         int i = 1;
         for (Node info : favouriteNodes) {
-            final String nodeString = info.toNodeString();
+            String nodeString = info.toNodeString();
             editor.putString(Integer.toString(i), nodeString);
             Timber.d("saved %d:%s", i, nodeString);
             i++;
@@ -215,14 +190,13 @@ public class LoginActivity extends BaseActivity
         editor.apply();
     }
 
-    private NodeInfo addFavourite(String nodeString) {
-        final NodeInfo nodeInfo = NodeInfo.fromString(nodeString);
+    private void addFavourite(String nodeString) {
+        NodeInfo nodeInfo = NodeInfo.fromString(nodeString);
         if (nodeInfo != null) {
             nodeInfo.setFavourite(true);
             favouriteNodes.add(nodeInfo);
         } else
             Timber.w("nodeString invalid: %s", nodeString);
-        return nodeInfo;
     }
 
     private void loadLegacyList(final String legacyListString) {
@@ -232,34 +206,6 @@ public class LoginActivity extends BaseActivity
             addFavourite(nodeString);
         }
     }
-
-    private void saveSelectedNode() { // save only if changed
-        final NodeInfo nodeInfo = getNode();
-        final String selectedNodeId = getSelectedNodeId();
-        if (nodeInfo != null) {
-            if (!nodeInfo.toNodeString().equals(selectedNodeId))
-                saveSelectedNode(nodeInfo);
-        } else {
-            if (selectedNodeId != null)
-                saveSelectedNode(null);
-        }
-    }
-
-    private void saveSelectedNode(NodeInfo nodeInfo) {
-        SharedPreferences.Editor editor = getSharedPreferences(SELECTED_NODE_PREFS_NAME, Context.MODE_PRIVATE).edit();
-        if (nodeInfo == null) {
-            editor.clear();
-        } else {
-            editor.putString("0", getNode().toNodeString());
-        }
-        editor.apply();
-    }
-
-    private String getSelectedNodeId() {
-        return getSharedPreferences(SELECTED_NODE_PREFS_NAME, Context.MODE_PRIVATE)
-                .getString("0", null);
-    }
-
 
     private Toolbar toolbar;
 
@@ -375,13 +321,9 @@ public class LoginActivity extends BaseActivity
                         if (WalletManager.getInstance().walletExists(walletFile)) {
                             Helper.promptPassword(LoginActivity.this, walletName, true, new Helper.PasswordAction() {
                                 @Override
-                                public void act(String walletName, String password, boolean fingerprintUsed) {
+                                public void action(String walletName, String password, boolean fingerprintUsed) {
                                     if (checkDevice(walletName, password))
                                         startDetails(walletFile, password, GenerateReviewFragment.VIEW_TYPE_DETAILS);
-                                }
-
-                                @Override
-                                public void fail(String walletName, String password, boolean fingerprintUsed) {
                                 }
                             });
                         } else { // this cannot really happen as we prefilter choices
@@ -397,8 +339,8 @@ public class LoginActivity extends BaseActivity
             }
         };
 
-        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(this);
-        builder.setMessage(getString(R.string.details_alert_message))
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog diag = builder.setMessage(getString(R.string.details_alert_message))
                 .setPositiveButton(getString(R.string.details_alert_yes), dialogClickListener)
                 .setNegativeButton(getString(R.string.details_alert_no), dialogClickListener)
                 .show();
@@ -412,13 +354,9 @@ public class LoginActivity extends BaseActivity
         if (WalletManager.getInstance().walletExists(walletFile)) {
             Helper.promptPassword(LoginActivity.this, walletName, false, new Helper.PasswordAction() {
                 @Override
-                public void act(String walletName, String password, boolean fingerprintUsed) {
+                public void action(String walletName, String password, boolean fingerprintUsed) {
                     if (checkDevice(walletName, password))
                         startReceive(walletFile, password);
-                }
-
-                @Override
-                public void fail(String walletName, String password, boolean fingerprintUsed) {
                 }
             });
         } else { // this cannot really happen as we prefilter choices
@@ -486,7 +424,7 @@ public class LoginActivity extends BaseActivity
         LayoutInflater li = LayoutInflater.from(this);
         View promptsView = li.inflate(R.layout.prompt_rename, null);
 
-        AlertDialog.Builder alertDialogBuilder = new MaterialAlertDialogBuilder(this);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         alertDialogBuilder.setView(promptsView);
 
         final EditText etRename = promptsView.findViewById(R.id.etRename);
@@ -641,7 +579,7 @@ public class LoginActivity extends BaseActivity
             }
         };
 
-        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(getString(R.string.archive_alert_message))
                 .setTitle(walletName)
                 .setPositiveButton(getString(R.string.archive_alert_yes), dialogClickListener)
@@ -713,11 +651,11 @@ public class LoginActivity extends BaseActivity
                 break;
             case NetworkType_Testnet:
                 toolbar.setSubtitle(getString(R.string.connect_testnet));
-                toolbar.setBackgroundResource(ColorHelper.getThemedResourceId(this, R.attr.colorPrimaryDark));
+                toolbar.setBackgroundResource(R.color.colorPrimaryDark);
                 break;
             case NetworkType_Stagenet:
                 toolbar.setSubtitle(getString(R.string.connect_stagenet));
-                toolbar.setBackgroundResource(ColorHelper.getThemedResourceId(this, R.attr.colorPrimaryDark));
+                toolbar.setBackgroundResource(R.color.colorPrimaryDark);
                 break;
             default:
                 throw new IllegalStateException("NetworkType unknown: " + net);
@@ -1184,54 +1122,41 @@ public class LoginActivity extends BaseActivity
 
     public void onChangeLocale() {
         final ArrayList<Locale> availableLocales = LocaleHelper.getAvailableLocales(LoginActivity.this);
-        Collections.sort(availableLocales, (locale1, locale2) -> {
-            String localeString1 = LocaleHelper.getDisplayName(locale1, true);
-            String localeString2 = LocaleHelper.getDisplayName(locale2, true);
-            return localeString1.compareTo(localeString2);
+        String[] localeDisplayName = new String[1 + availableLocales.size()];
+
+        Collections.sort(availableLocales, new Comparator<Locale>() {
+            @Override
+            public int compare(Locale locale1, Locale locale2) {
+                String localeString1 = LocaleHelper.getDisplayName(locale1, true);
+                String localeString2 = LocaleHelper.getDisplayName(locale2, true);
+                return localeString1.compareTo(localeString2);
+            }
         });
 
-        String[] localeDisplayNames = new String[1 + availableLocales.size()];
-        localeDisplayNames[0] = getString(R.string.language_system_default);
-        for (int i = 1; i < localeDisplayNames.length; i++) {
-            localeDisplayNames[i] = LocaleHelper.getDisplayName(availableLocales.get(i - 1), true);
+        localeDisplayName[0] = getString(R.string.language_system_default);
+        for (int i = 1; i < localeDisplayName.length; i++) {
+            Locale locale = availableLocales.get(i - 1);
+            localeDisplayName[i] = LocaleHelper.getDisplayName(locale, true);
         }
 
         int currentLocaleIndex = 0;
-        String currentLocaleTag = LocaleHelper.getPreferredLanguageTag(LoginActivity.this);
-        if (!currentLocaleTag.isEmpty()) {
-            Locale currentLocale = Locale.forLanguageTag(currentLocaleTag);
-            String currentLocaleName = LocaleHelper.getDisplayName(currentLocale, true);
-            currentLocaleIndex = Arrays.asList(localeDisplayNames).indexOf(currentLocaleName);
-            if (currentLocaleIndex < 0) currentLocaleIndex = 0;
+        String currentLocaleName = LocaleHelper.getLocale(LoginActivity.this);
+        if (!currentLocaleName.isEmpty()) {
+            Locale currentLocale = Locale.forLanguageTag(currentLocaleName);
+            String currentLocalizedString = LocaleHelper.getDisplayName(currentLocale, true);
+            currentLocaleIndex = Arrays.asList(localeDisplayName).indexOf(currentLocalizedString);
         }
 
-        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(LoginActivity.this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
         builder.setTitle(getString(R.string.menu_language));
-        builder.setSingleChoiceItems(localeDisplayNames, currentLocaleIndex, (dialog, i) -> {
-            dialog.dismiss();
+        builder.setSingleChoiceItems(localeDisplayName, currentLocaleIndex, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int i) {
+                dialog.dismiss();
 
-            LocaleHelper.setAndSaveLocale(this,
-                    (i == 0) ? "" : availableLocales.get(i - 1).toLanguageTag());
-            startActivity(getIntent().addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK));
-        });
-        builder.show();
-    }
-
-    public void onChangeTheme() {
-        final DayNightMode currentDayNightSetting = DayNightMode.getValue(AppCompatDelegate.getDefaultNightMode());
-        // selection will be empty if UNKNOWN
-
-        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(LoginActivity.this);
-        builder.setTitle(getString(R.string.menu_daynight));
-
-        String[] modeNames = getResources().getStringArray(R.array.daynight_themes);
-
-        builder.setSingleChoiceItems(modeNames, currentDayNightSetting.ordinal(), (dialog, i) -> {
-            dialog.dismiss();
-            final DayNightMode mode = DayNightMode.values()[i];
-            if (currentDayNightSetting != mode) {
-                NightmodeHelper.setAndSavePreferredNightmode(LoginActivity.this, mode);
-                LoginActivity.this.recreate();
+                LocaleHelper.setLocale(LoginActivity.this,
+                        (i == 0) ? "" : availableLocales.get(i - 1).toLanguageTag());
+                startActivity(getIntent().addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK));
             }
         });
         builder.show();
@@ -1294,30 +1219,18 @@ public class LoginActivity extends BaseActivity
             case R.id.action_help_node:
                 HelpFragment.display(getSupportFragmentManager(), R.string.help_node);
                 return true;
-            case R.id.action_default_nodes: {
-                Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-                if ((WalletManager.getInstance().getNetworkType() == NetworkType.NetworkType_Mainnet) &&
-                        (f instanceof NodeFragment)) {
-                    ((NodeFragment) f).restoreDefaultNodes();
-                }
-                return true;
-            }
             case R.id.action_privacy_policy:
                 PrivacyFragment.display(getSupportFragmentManager());
                 return true;
             case R.id.action_language:
                 onChangeLocale();
                 return true;
-            case R.id.action_theme:
-                onChangeTheme();
-                return true;
-            case R.id.action_ledger_seed: {
+            case R.id.action_ledger_seed:
                 Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
                 if (f instanceof GenerateFragment) {
                     ((GenerateFragment) f).convertLedgerSeed();
                 }
                 return true;
-            }
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -1369,7 +1282,6 @@ public class LoginActivity extends BaseActivity
                 }
             }
         }
-
     }
 
     boolean checkDevice(String walletName, String password) {
@@ -1400,15 +1312,10 @@ public class LoginActivity extends BaseActivity
             Helper.promptPassword(LoginActivity.this, walletName, false,
                     new Helper.PasswordAction() {
                         @Override
-                        public void act(String walletName, String password, boolean fingerprintUsed) {
+                        public void action(String walletName, String password, boolean fingerprintUsed) {
                             if (checkDevice(walletName, password))
                                 startWallet(walletName, password, fingerprintUsed, streetmode);
                         }
-
-                        @Override
-                        public void fail(String walletName, String password, boolean fingerprintUsed) {
-                        }
-
                     });
         } else { // this cannot really happen as we prefilter choices
             Toast.makeText(this, getString(R.string.bad_wallet), Toast.LENGTH_SHORT).show();

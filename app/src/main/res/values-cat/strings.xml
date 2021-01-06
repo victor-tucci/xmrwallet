@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="wallet_activity_name">Portamonedes</string>
 
     <string name="menu_about">Sobre</string>
@@ -86,6 +85,7 @@
 
     <string name="label_send_txid">ID de transacció</string>
     <string name="label_send_address">Adreça de destí</string>
+    <string name="label_send_payment_id">ID de pagament</string>
     <string name="label_send_notes">Notes</string>
 
     <string name="backup_progress">Còpia de seguretat en curs</string>
@@ -126,6 +126,7 @@
     <string name="prompt_changepwB">Repetir contrasenya per %1$s</string>
     <string name="prompt_password">Contrasenya per %1$s</string>
     <string name="prompt_fingerprint_auth">Pots obrir el portamonedes fent servir l\'empremta digital.\nPremi el sensor.</string>
+    <string name="prompt_send_password">Confirmi contrasenya</string>
     <string name="prompt_open_wallet">Obrint el portamonedes&#8230;</string>
     <string name="bad_fingerprint">Empremta no reconeguda. Torni-ho a intentar.</string>
     <string name="bad_password">Contrasenya incorrecta!</string>
@@ -212,6 +213,10 @@
     <string name="generate_check_address">Introduïu una adreça vàlida</string>
     <string name="generate_check_mnemonic">Introduïu la vostra llavor de 25 paraules</string>
 
+    <string name="send_amount_btc_xmr">%1$s (indicatiu)</string>
+
+    <string name="send_paymentid_hint">ID de pagament (opcional)</string>
+    <string name="send_amount_hint">0.00</string>
     <string name="send_notes_hint">Notes privades (opcional)</string>
     <string name="send_generate_paymentid_hint">Generar</string>
     <string name="send_send_label">Spend my sweet Moneroj</string>
@@ -260,6 +265,8 @@
     <string name="tx_transfers">Transferències</string>
     <string name="tx_notes">Notes</string>
     <string name="tx_notes_hint">(opcional)</string>
+    <string name="tx_button_notes">Desa</string>
+    <string name="tx_notes_set_failed">Desat de notes fallit</string>
     <string name="tx_title">Detalls de Transacció</string>
 
     <string name="tx_pending">PENDENT</string>
@@ -268,6 +275,8 @@
     <string name="receive_amount_hint">Quantitat</string>
     <string name="receive_desc_hint">Descripció (opcional)</string>
     <string name="receive_cannot_open">No s\'ha pogut obrir el portamonedes!</string>
+    <string name="receive_paymentid_invalid">16 Hex caràcters (0&#8211;9,a&#8211;f)</string>
+    <string name="receive_integrated_paymentid_invalid">ha d\'estar buit amb una adreça integrada</string>
 
     <string name="receive_amount_too_big">Màx. %1$s</string>
     <string name="receive_amount_negative">Mín. 0</string>
@@ -320,6 +329,7 @@
     <string name="nfc_tag_size">L\'etiquetatge proporciona %1$d bits, però es necessiten %2$d!</string>
     <string name="nfc_tag_read_undef">No entenc l\'etiquetatge!</string>
     <string name="nfc_tag_read_what">No sé què vols!</string>
+    <string name="nfc_tag_read_success">Lectura d\'etiquetatge exitosa</string>
     <string name="nfc_tag_tap">NFC Disponible!</string>
 
     <string name="menu_info">Mostra Secrets!</string>
@@ -373,37 +383,4 @@
     <string name="label_restoreheight">Restablir Alçada</string> <!-- Restore Height -->
 
     <string name="toast_ledger_start_app">Start Monero App on %1$s</string>
-
-    <string name="menu_rescan">Rescan!</string>
-
-    <string name="onboarding_agree">I get it!</string>
-    <string name="onboarding_button_next">Next</string>
-    <string name="onboarding_button_ready">I\'m ready!</string>
-
-    <string name="onboarding_welcome_title">Welcome to Monerujo!</string>
-    <string name="onboarding_welcome_information">This app allows you to create and use Monero wallets. You can store your sweet moneroj in them.</string>
-    <string name="onboarding_seed_title">Keep your seed safe</string>
-    <string name="onboarding_seed_information">The seed grants full access to whoever has it. If you lose it, we cannot help you recover it and you lose your beloved moneroj.</string>
-    <string name="onboarding_xmrto_title">Send Bitcoin</string>
-    <string name="onboarding_xmrto_information">Monerujo has XMR.to support built-in. Just paste or scan a Bitcoin address and you\'ll be sending BTC by spending XMR.</string>
-    <string name="onboarding_nodes_title">Nodes, your way</string>
-    <string name="onboarding_nodes_information">Nodes connect you to the Monero network. Choose between public nodes or go full cypherpunk using your own.</string>
-    <string name="onboarding_fpsend_title">Send with fingerprint</string>
-    <string name="onboarding_fpsend_information">You\'re now able to send XMR with just your fingerprint if you enabled it. To request the password, just disable fingerprint access.</string>
-
-    <string name="menu_daynight">Dark Mode</string>
-    <string-array name="daynight_themes">
-        <item>Auto</item>
-        <item>Day</item>
-        <item>Night</item>
-    </string-array>
-    <string name="gunther_says">There is nothing here\nPlease create or restore a wallet</string>
-
-    <string name="menu_default_nodes">Restore default nodes</string>
-    <string name="toast_default_nodes">Restoring already in progress…</string>
-
-    <string name="node_updated_now">Last Block: %1$d seconds ago</string>
-    <string name="node_updated_mins">Last Block: %1$d minutes ago</string>
-    <string name="node_updated_hours">Last Block: %1$d hours ago</string>
-    <string name="node_updated_days">Last Block: %1$d days ago</string>
 </resources>

@@ -16,20 +16,19 @@
 
 package com.m2049r.xmrwallet.dialog;
 
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.m2049r.xmrwallet.R;
 
 public class HelpFragment extends DialogFragment {
@@ -66,15 +65,9 @@ public class HelpFragment extends DialogFragment {
         if (helpId > 0)
             ((TextView) view.findViewById(R.id.tvHelp)).setText(Html.fromHtml(getString(helpId)));
 
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity())
-                .setView(view)
-                .setNegativeButton(R.string.help_ok,
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int id) {
-                                dialog.dismiss();
-                            }
-                        });
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setView(view);
+        builder.setNegativeButton(R.string.about_close, (dialog, id) -> dialog.dismiss());
         return builder.create();
     }
 }

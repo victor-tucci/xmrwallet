@@ -16,10 +16,14 @@
 
 package com.m2049r.xmrwallet;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.design.widget.TextInputLayout;
+import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
@@ -36,17 +40,10 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.switchmaterial.SwitchMaterial;
-import com.google.android.material.textfield.TextInputLayout;
 import com.m2049r.xmrwallet.ledger.Ledger;
 import com.m2049r.xmrwallet.ledger.LedgerProgressDialog;
 import com.m2049r.xmrwallet.model.NetworkType;
@@ -121,11 +118,31 @@ public class GenerateReviewFragment extends Fragment {
         tvWalletSpendKey.setTextIsSelectable(allowCopy);
         tvWalletPassword.setTextIsSelectable(allowCopy);
 
-        bAccept.setOnClickListener(v -> acceptWallet());
-        view.findViewById(R.id.bCopyViewKey).setOnClickListener(v -> copyViewKey());
-        bCopyAddress.setEnabled(false);
-        bCopyAddress.setOnClickListener(v -> copyAddress());
-        view.findViewById(R.id.bAdvancedInfo).setOnClickListener(v -> showAdvancedInfo());
+        bAccept.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                acceptWallet();
+            }
+        });
+        view.findViewById(R.id.bCopyViewKey).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                copyViewKey();
+            }
+        });
+        bCopyAddress.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                copyAddress();
+            }
+        });
+        bCopyAddress.setClickable(false);
+        view.findViewById(R.id.bAdvancedInfo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showAdvancedInfo();
+            }
+        });
 
         Bundle args = getArguments();
         type = args.getString(REQUEST_TYPE);
@@ -270,7 +287,8 @@ public class GenerateReviewFragment extends Fragment {
                     showAdvanced = true;
                 }
                 if (showAdvanced) bAdvancedInfo.setVisibility(View.VISIBLE);
-                bCopyAddress.setEnabled(true);
+                bCopyAddress.setClickable(true);
+                bCopyAddress.setImageResource(R.drawable.ic_content_copy_black_24dp);
                 activityCallback.setTitle(name, getString(R.string.details_title));
                 activityCallback.setToolbarButton(
                         GenerateReviewFragment.VIEW_TYPE_ACCEPT.equals(type) ? Toolbar.BUTTON_NONE : Toolbar.BUTTON_BACK);
@@ -334,7 +352,7 @@ public class GenerateReviewFragment extends Fragment {
     }
 
     @Override
-    public void onAttach(@NonNull Context context) {
+    public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof Listener) {
             this.activityCallback = (Listener) context;
@@ -381,7 +399,7 @@ public class GenerateReviewFragment extends Fragment {
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         String type = getArguments().getString(REQUEST_TYPE); // intance variable <type> not set yet
         if (GenerateReviewFragment.VIEW_TYPE_ACCEPT.equals(type)) {
             inflater.inflate(R.menu.wallet_details_help_menu, menu);
@@ -430,7 +448,7 @@ public class GenerateReviewFragment extends Fragment {
         protected Boolean doInBackground(String... params) {
             if (params.length != 2) return false;
             final String userPassword = params[0];
-            final boolean fingerPassValid = Boolean.parseBoolean(params[1]);
+            final boolean fingerPassValid = Boolean.valueOf(params[1]);
             newPassword = KeyStoreHelper.getCrazyPass(getActivity(), userPassword);
             final boolean success = changeWalletPassword(newPassword);
             if (success) {
@@ -470,7 +488,7 @@ public class GenerateReviewFragment extends Fragment {
         LayoutInflater li = LayoutInflater.from(getActivity());
         View promptsView = li.inflate(R.layout.prompt_changepw, null);
 
-        AlertDialog.Builder alertDialogBuilder = new MaterialAlertDialogBuilder(getActivity());
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
         alertDialogBuilder.setView(promptsView);
 
         final TextInputLayout etPasswordA = promptsView.findViewById(R.id.etWalletPasswordA);
@@ -480,7 +498,7 @@ public class GenerateReviewFragment extends Fragment {
         etPasswordB.setHint(getString(R.string.prompt_changepwB, walletName));
 
         LinearLayout llFingerprintAuth = promptsView.findViewById(R.id.llFingerprintAuth);
-        final SwitchMaterial swFingerprintAllowed = (SwitchMaterial) llFingerprintAuth.getChildAt(0);
+        final Switch swFingerprintAllowed = (Switch) llFingerprintAuth.getChildAt(0);
         if (FingerprintHelper.isDeviceSupported(getActivity())) {
             llFingerprintAuth.setVisibility(View.VISIBLE);
 
@@ -489,7 +507,7 @@ public class GenerateReviewFragment extends Fragment {
                 public void onClick(View view) {
                     if (!swFingerprintAllowed.isChecked()) return;
 
-                    AlertDialog.Builder builder = new MaterialAlertDialogBuilder(getActivity());
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                     builder.setMessage(Html.fromHtml(getString(R.string.generate_fingerprint_warn)))
                             .setCancelable(false)
                             .setPositiveButton(getString(R.string.label_ok), null)
@@ -578,7 +596,7 @@ public class GenerateReviewFragment extends Fragment {
                             etPasswordA.setError(getString(R.string.generate_empty_passwordB));
                         } else if (!newPasswordA.equals(newPasswordB)) {
                             etPasswordB.setError(getString(R.string.generate_bad_passwordB));
-                        } else {
+                        } else if (newPasswordA.equals(newPasswordB)) {
                             new AsyncChangePassword().execute(newPasswordA, Boolean.toString(swFingerprintAllowed.isChecked()));
                             Helper.hideKeyboardAlways(getActivity());
                             openDialog.dismiss();
@@ -601,7 +619,7 @@ public class GenerateReviewFragment extends Fragment {
                         etPasswordA.setError(getString(R.string.generate_empty_passwordB));
                     } else if (!newPasswordA.equals(newPasswordB)) {
                         etPasswordB.setError(getString(R.string.generate_bad_passwordB));
-                    } else {
+                    } else if (newPasswordA.equals(newPasswordB)) {
                         new AsyncChangePassword().execute(newPasswordA, Boolean.toString(swFingerprintAllowed.isChecked()));
                         Helper.hideKeyboardAlways(getActivity());
                         openDialog.dismiss();

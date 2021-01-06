@@ -18,13 +18,13 @@
 package com.m2049r.xmrwallet.service.exchange.api;
 
 
-import androidx.annotation.NonNull;
+import android.support.annotation.NonNull;
 
 
 public interface ExchangeApi {
 
     /**
-     * Queries the exchnage rate
+     * Queries the exchange rate
      *
      * @param baseCurrency  base currency
      * @param quoteCurrency quote currency

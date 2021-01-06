@@ -20,15 +20,15 @@
             android:orientation="horizontal"
             android:weightSum="10">
 
-            <com.google.android.material.textfield.TextInputLayout
+            <android.support.design.widget.TextInputLayout
                 android:id="@+id/etNodeHost"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="8"
                 app:errorEnabled="true">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <android.support.design.widget.TextInputEditText
                     style="@style/MoneroEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -38,17 +38,17 @@
                     android:maxLines="1"
                     android:textAlignment="textStart"
                     tools:text="node.supportxmr.com" />
-            </com.google.android.material.textfield.TextInputLayout>
+            </android.support.design.widget.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
+            <android.support.design.widget.TextInputLayout
                 android:id="@+id/etNodePort"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 app:errorEnabled="true">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <android.support.design.widget.TextInputEditText
                     style="@style/MoneroEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -57,18 +57,18 @@
                     android:inputType="text"
                     android:maxLines="1"
                     android:textAlignment="textStart"
-                    tools:text="18089" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    tools:text="22020" />
+            </android.support.design.widget.TextInputLayout>
         </LinearLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
+        <android.support.design.widget.TextInputLayout
             android:id="@+id/etNodeName"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/data_top">
 
-            <com.google.android.material.textfield.TextInputEditText
+            <android.support.design.widget.TextInputEditText
                 style="@style/MoneroEdit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -78,23 +78,22 @@
                 android:maxLines="1"
                 android:textAlignment="textStart"
                 tools:text="supportxmr" />
-        </com.google.android.material.textfield.TextInputLayout>
+        </android.support.design.widget.TextInputLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/data_top"
-            android:baselineAligned="false"
             android:orientation="horizontal">
 
-            <com.google.android.material.textfield.TextInputLayout
+            <android.support.design.widget.TextInputLayout
                 android:id="@+id/etNodeUser"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <android.support.design.widget.TextInputEditText
                     style="@style/MoneroEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -104,16 +103,16 @@
                     android:maxLines="1"
                     android:textAlignment="textStart"
                     tools:text="userxyz" />
-            </com.google.android.material.textfield.TextInputLayout>
+            </android.support.design.widget.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
+            <android.support.design.widget.TextInputLayout
                 android:id="@+id/etNodePass"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <android.support.design.widget.TextInputEditText
                     style="@style/MoneroEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -123,7 +122,7 @@
                     android:maxLines="1"
                     android:textAlignment="textStart"
                     tools:text="secret" />
-            </com.google.android.material.textfield.TextInputLayout>
+            </android.support.design.widget.TextInputLayout>
         </LinearLayout>
 
         <RelativeLayout

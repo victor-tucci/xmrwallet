@@ -2,11 +2,11 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="16dp"
     android:paddingTop="8dp"
-    android:paddingEnd="16dp">
+    android:paddingEnd="16dp"
+    android:paddingStart="16dp">
 
-    <LinearLayout
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
@@ -14,7 +14,7 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="100dp"
-            android:src="@drawable/gunther_coder" />
+            android:src="@drawable/gunther_lunther" />
 
         <TextView
             android:id="@+id/tvCredits"

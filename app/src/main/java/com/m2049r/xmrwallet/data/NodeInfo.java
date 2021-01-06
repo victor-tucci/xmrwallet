@@ -21,8 +21,9 @@ import com.burgstaller.okhttp.CachingAuthenticatorDecorator;
 import com.burgstaller.okhttp.digest.CachingAuthenticator;
 import com.burgstaller.okhttp.digest.Credentials;
 import com.burgstaller.okhttp.digest.DigestAuthenticator;
+import com.m2049r.levin.scanner.Dispatcher;
+import com.m2049r.xmrwallet.model.NetworkType;
 import com.m2049r.levin.scanner.LevinPeer;
-import com.m2049r.xmrwallet.util.NodePinger;
 import com.m2049r.xmrwallet.util.OkHttpHelper;
 
 import org.json.JSONException;
@@ -36,8 +37,6 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import lombok.Getter;
-import lombok.Setter;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -48,24 +47,11 @@ import okhttp3.ResponseBody;
 import timber.log.Timber;
 
 public class NodeInfo extends Node {
-    final static public int MIN_MAJOR_VERSION = 14;
-    final static public String RPC_VERSION = "2.0";
-
-    @Getter
     private long height = 0;
-    @Getter
     private long timestamp = 0;
-    @Getter
     private int majorVersion = 0;
-    @Getter
     private double responseTime = Double.MAX_VALUE;
-    @Getter
     private int responseCode = 0;
-    @Getter
-    private boolean tested = false;
-    @Getter
-    @Setter
-    private boolean selecting = false;
 
     public void clear() {
         height = 0;
@@ -73,13 +59,13 @@ public class NodeInfo extends Node {
         responseTime = Double.MAX_VALUE;
         responseCode = 0;
         timestamp = 0;
-        tested = false;
     }
 
     static public NodeInfo fromString(String nodeString) {
         try {
             return new NodeInfo(nodeString);
         } catch (IllegalArgumentException ex) {
+            Timber.w(ex);
             return null;
         }
     }
@@ -125,6 +111,26 @@ public class NodeInfo extends Node {
         super();
     }
 
+    public long getHeight() {
+        return height;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public int getMajorVersion() {
+        return majorVersion;
+    }
+
+    public double getResponseTime() {
+        return responseTime;
+    }
+
+    public int getResponseCode() {
+        return responseCode;
+    }
+
     public boolean isSuccessful() {
         return (responseCode >= 200) && (responseCode < 300);
     }
@@ -134,23 +140,27 @@ public class NodeInfo extends Node {
     }
 
     public boolean isValid() {
-        return isSuccessful() && (majorVersion >= MIN_MAJOR_VERSION) && (responseTime < Double.MAX_VALUE);
+        boolean versionValid = (majorVersion >= 14);
+        return isSuccessful() && versionValid && (responseTime < Double.MAX_VALUE);
     }
 
-    static public Comparator<NodeInfo> BestNodeComparator = (o1, o2) -> {
-        if (o1.isValid()) {
-            if (o2.isValid()) { // both are valid
-                // higher node wins
-                int heightDiff = (int) (o2.height - o1.height);
-                if (heightDiff != 0)
-                    return heightDiff;
-                // if they are equal, faster node wins
-                return (int) Math.signum(o1.responseTime - o2.responseTime);
+    static public Comparator<NodeInfo> BestNodeComparator = new Comparator<NodeInfo>() {
+        @Override
+        public int compare(NodeInfo o1, NodeInfo o2) {
+            if (o1.isValid()) {
+                if (o2.isValid()) { // both are valid
+                    // higher node wins
+                    int heightDiff = (int) (o2.height - o1.height);
+                    if (Math.abs(heightDiff) > Dispatcher.HEIGHT_WINDOW)
+                        return heightDiff;
+                    // if they are (nearly) equal, faster node wins
+                    return (int) Math.signum(o1.responseTime - o2.responseTime);
+                } else {
+                    return -1;
+                }
             } else {
-                return -1;
+                return 1;
             }
-        } else {
-            return 1;
         }
     };
 
@@ -181,7 +191,7 @@ public class NodeInfo extends Node {
     }
 
     private static final int HTTP_TIMEOUT = OkHttpHelper.HTTP_TIMEOUT;
-    public static final double PING_GOOD = HTTP_TIMEOUT / 3.0; //ms
+    public static final double PING_GOOD = HTTP_TIMEOUT / 3; //ms
     public static final double PING_MEDIUM = 2 * PING_GOOD; //ms
     public static final double PING_BAD = HTTP_TIMEOUT;
 
@@ -189,15 +199,7 @@ public class NodeInfo extends Node {
         return testRpcService(rpcPort);
     }
 
-    public boolean testRpcService(NodePinger.Listener listener) {
-        boolean result = testRpcService(rpcPort);
-        if (listener != null)
-            listener.publish(this);
-        return result;
-    }
-
     private boolean testRpcService(int port) {
-        Timber.d("Testing %s", toNodeString());
         clear();
         try {
             OkHttpClient client = OkHttpHelper.getEagerClient();
@@ -226,15 +228,10 @@ public class NodeInfo extends Node {
                 responseCode = response.code();
                 if (response.isSuccessful()) {
                     ResponseBody respBody = response.body(); // closed through Response object
-                    if ((respBody != null) && (respBody.contentLength() < 2000)) { // sanity check
+                    if ((respBody != null) && (respBody.contentLength() < 1000)) { // sanity check
                         final JSONObject json = new JSONObject(
                                 respBody.string());
-                        String rpcVersion = json.getString("jsonrpc");
-                        if (!RPC_VERSION.equals(rpcVersion))
-                            return false;
                         final JSONObject result = json.getJSONObject("result");
-                        if (!result.has("credits")) // introduced in monero v0.15.0
-                            return false;
                         final JSONObject header = result.getJSONObject("block_header");
                         height = header.getLong("height");
                         timestamp = header.getLong("timestamp");
@@ -244,14 +241,13 @@ public class NodeInfo extends Node {
                 }
             }
         } catch (IOException | JSONException ex) {
-            Timber.d(ex);
-        } finally {
-            tested = true;
+            // failure
+            Timber.d(ex.getMessage());
         }
         return false;
     }
 
-    static final private int[] TEST_PORTS = {18089}; // check only opt-in port
+    static final private int[] TEST_PORTS = {22023}; // check only opt-in port
 
     public boolean findRpcService() {
         // if already have an rpcPort, use that

@@ -8,8 +8,7 @@
         android:id="@+id/fabScreen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="?android:attr/colorBackground"
-        android:alpha="0.93"
+        android:background="#eeffffff"
         android:visibility="invisible">
 
         <RelativeLayout
@@ -29,13 +28,13 @@
                 android:layout_marginEnd="8dp"
                 android:text="@string/fab_create_new" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
+            <android.support.design.widget.FloatingActionButton
                 android:id="@+id/fabNew"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
                 android:layout_toEndOf="@+id/fabNewT"
-                android:backgroundTint="@color/gradientRight"
+                android:backgroundTint="@color/gradientLight"
                 android:elevation="6dp"
                 android:src="@drawable/ic_new"
                 app:borderWidth="0dp"
@@ -61,13 +60,13 @@
                 android:layout_marginEnd="8dp"
                 android:text="@string/fab_restore_viewonly" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
+            <android.support.design.widget.FloatingActionButton
                 android:id="@+id/fabView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
                 android:layout_toEndOf="@+id/fabViewT"
-                android:backgroundTint="@color/gradientRight"
+                android:backgroundTint="@color/gradientLight"
                 android:elevation="6dp"
                 android:src="@drawable/ic_eye"
                 app:borderWidth="0dp"
@@ -93,13 +92,13 @@
                 android:layout_marginEnd="8dp"
                 android:text="@string/fab_restore_key" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
+            <android.support.design.widget.FloatingActionButton
                 android:id="@+id/fabKey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
                 android:layout_toEndOf="@+id/fabKeyT"
-                android:backgroundTint="@color/gradientRight"
+                android:backgroundTint="@color/gradientLight"
                 android:elevation="6dp"
                 android:src="@drawable/ic_key"
                 app:borderWidth="0dp"
@@ -125,13 +124,13 @@
                 android:layout_marginEnd="8dp"
                 android:text="@string/fab_restore_seed" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
+            <android.support.design.widget.FloatingActionButton
                 android:id="@+id/fabSeed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
                 android:layout_toEndOf="@+id/fabSeedT"
-                android:backgroundTint="@color/gradientRight"
+                android:backgroundTint="@color/gradientLight"
                 android:elevation="6dp"
                 android:src="@drawable/ic_seed"
                 app:borderWidth="0dp"
@@ -158,13 +157,13 @@
                 android:layout_marginEnd="8dp"
                 android:text="@string/fab_restore_ledger" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
+            <android.support.design.widget.FloatingActionButton
                 android:id="@+id/fabLedger"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
                 android:layout_toEndOf="@+id/fabLedgerT"
-                android:backgroundTint="@color/gradientRight"
+                android:backgroundTint="@color/gradientLight"
                 android:elevation="6dp"
                 android:src="@drawable/ic_ledger_restore"
                 app:borderWidth="0dp"
@@ -183,7 +182,7 @@
         android:background="@drawable/gradient_oval"
         android:elevation="6dp">
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

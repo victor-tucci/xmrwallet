@@ -18,6 +18,7 @@ package com.m2049r.xmrwallet.util;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ClipData;
 import android.content.ClipDescription;
@@ -37,6 +38,8 @@ import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.Environment;
 import android.os.StrictMode;
+import android.support.design.widget.TextInputLayout;
+import android.support.v4.content.ContextCompat;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.text.Editable;
@@ -52,13 +55,9 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.ContextCompat;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.textfield.TextInputLayout;
 import com.m2049r.xmrwallet.BuildConfig;
 import com.m2049r.xmrwallet.R;
+import com.m2049r.xmrwallet.model.Wallet;
 import com.m2049r.xmrwallet.model.NetworkType;
 import com.m2049r.xmrwallet.model.WalletManager;
 import com.m2049r.xmrwallet.service.exchange.api.ExchangeApi;
@@ -68,16 +67,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.util.Calendar;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import okhttp3.HttpUrl;
 import timber.log.Timber;
 
 public class Helper {
@@ -85,12 +83,11 @@ public class Helper {
             (BuildConfig.FLAVOR.startsWith("prod") ? "" : "." + BuildConfig.FLAVOR)
                     + (BuildConfig.DEBUG ? "-debug" : "");
 
+    static public final String BASE_CRYPTO = Wallet.LOKI_SYMBOL;
     static public final String NOCRAZYPASS_FLAGFILE = ".nocrazypass";
 
-    static public final String BASE_CRYPTO = "XMR";
-
-    static private final String WALLET_DIR = "monerujo" + FLAVOR_SUFFIX;
-    static private final String HOME_DIR = "monero" + FLAVOR_SUFFIX;
+    static private final String WALLET_DIR = "loki-wallet" + FLAVOR_SUFFIX;
+    static private final String HOME_DIR = "loki" + FLAVOR_SUFFIX;
 
     static public int DISPLAY_DIGITS_INFO = 5;
 
@@ -168,9 +165,7 @@ public class Helper {
 
     static public void showKeyboard(Activity act) {
         InputMethodManager imm = (InputMethodManager) act.getSystemService(Context.INPUT_METHOD_SERVICE);
-        final View focus = act.getCurrentFocus();
-        if (focus != null)
-            imm.showSoftInput(focus, InputMethodManager.SHOW_IMPLICIT);
+        imm.showSoftInput(act.getCurrentFocus(), InputMethodManager.SHOW_IMPLICIT);
     }
 
     static public void hideKeyboard(Activity act) {
@@ -193,7 +188,8 @@ public class Helper {
     }
 
     static public BigDecimal getDecimalAmount(long amount) {
-        return new BigDecimal(amount).scaleByPowerOfTen(-12);
+        // Loki - All amounts need to be divided by 10e8
+        return new BigDecimal(amount).scaleByPowerOfTen(-9);
     }
 
     static public String getDisplayAmount(long amount) {
@@ -268,7 +264,7 @@ public class Helper {
             urlConnection.setConnectTimeout(HTTP_TIMEOUT);
             urlConnection.setReadTimeout(HTTP_TIMEOUT);
             InputStreamReader in = new InputStreamReader(urlConnection.getInputStream());
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             final int BUFFER_SIZE = 512;
             char[] buffer = new char[BUFFER_SIZE];
             int length = in.read(buffer, 0, BUFFER_SIZE);
@@ -325,15 +321,6 @@ public class Helper {
         return ShakeAnimation;
     }
 
-    static public HttpUrl getXmrToBaseUrl() {
-        if ((WalletManager.getInstance() == null)
-                || (WalletManager.getInstance().getNetworkType() != NetworkType.NetworkType_Mainnet)) {
-            return HttpUrl.parse("https://test.xmr.to/api/v3/xmr2btc/");
-        } else {
-            return HttpUrl.parse("https://xmr.to/api/v3/xmr2btc/");
-        }
-    }
-
     private final static char[] HexArray = "0123456789ABCDEF".toCharArray();
 
     public static String bytesToHex(byte[] data) {
@@ -371,7 +358,7 @@ public class Helper {
     // TODO make the log levels refer to the  WalletManagerFactory::LogLevel enum ?
     static public void initLogger(Context context, int level) {
         String home = getStorage(context, HOME_DIR).getAbsolutePath();
-        WalletManager.initLogger(home + "/monerujo", "monerujo.log");
+        WalletManager.initLogger(home + "/loki-wallet", "loki-wallet.log");
         if (level >= WalletManager.LOGLEVEL_SILENT)
             WalletManager.setLogLevel(level);
     }
@@ -422,14 +409,14 @@ public class Helper {
     }
 
     static AlertDialog openDialog = null; // for preventing opening of multiple dialogs
-    static AsyncTask<Void, Void, Boolean> passwordTask = null;
+    static AsyncTask<Void, Void, Boolean> loginTask = null;
 
     static public void promptPassword(final Context context, final String wallet, boolean fingerprintDisabled, final PasswordAction action) {
         if (openDialog != null) return; // we are already asking for password
         LayoutInflater li = LayoutInflater.from(context);
         final View promptsView = li.inflate(R.layout.prompt_password, null);
 
-        AlertDialog.Builder alertDialogBuilder = new MaterialAlertDialogBuilder(context);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
         alertDialogBuilder.setView(promptsView);
 
         final TextInputLayout etPassword = promptsView.findViewById(R.id.etPassword);
@@ -447,11 +434,11 @@ public class Helper {
 
         final AtomicBoolean incorrectSavedPass = new AtomicBoolean(false);
 
-        class PasswordTask extends AsyncTask<Void, Void, Boolean> {
+        class LoginWalletTask extends AsyncTask<Void, Void, Boolean> {
             private String pass;
             private boolean fingerprintUsed;
 
-            PasswordTask(String pass, boolean fingerprintUsed) {
+            LoginWalletTask(String pass, boolean fingerprintUsed) {
                 this.pass = pass;
                 this.fingerprintUsed = fingerprintUsed;
             }
@@ -493,7 +480,7 @@ public class Helper {
                         etPassword.setError(context.getString(R.string.bad_password));
                     }
                 }
-                passwordTask = null;
+                loginTask = null;
             }
         }
 
@@ -507,13 +494,11 @@ public class Helper {
             }
 
             @Override
-            public void beforeTextChanged(CharSequence s, int start,
-                                          int count, int after) {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
             @Override
-            public void onTextChanged(CharSequence s, int start,
-                                      int before, int count) {
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
             }
         });
 
@@ -522,17 +507,15 @@ public class Helper {
                 .setCancelable(false)
                 .setPositiveButton(context.getString(R.string.label_ok), null)
                 .setNegativeButton(context.getString(R.string.label_cancel),
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                Helper.hideKeyboardAlways((Activity) context);
-                                cancelSignal.cancel();
-                                if (passwordTask != null) {
-                                    passwordTask.cancel(true);
-                                    passwordTask = null;
-                                }
-                                dialog.cancel();
-                                openDialog = null;
+                        (dialog, id) -> {
+                            Helper.hideKeyboardAlways((Activity) context);
+                            cancelSignal.cancel();
+                            if (loginTask != null) {
+                                loginTask.cancel(true);
+                                loginTask = null;
                             }
+                            dialog.cancel();
+                            openDialog = null;
                         });
         openDialog = alertDialogBuilder.create();
 
@@ -557,9 +540,9 @@ public class Helper {
                 public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
                     try {
                         String userPass = KeyStoreHelper.loadWalletUserPass(context, wallet);
-                        if (passwordTask == null) {
-                            passwordTask = new PasswordTask(userPass, true);
-                            passwordTask.execute();
+                        if (loginTask == null) {
+                            loginTask = new LoginWalletTask(userPass, true);
+                            loginTask.execute();
                         }
                     } catch (KeyStoreHelper.BrokenPasswordStoreException ex) {
                         etPassword.setError(context.getString(R.string.bad_password));
@@ -591,9 +574,9 @@ public class Helper {
                     @Override
                     public void onClick(View view) {
                         String pass = etPassword.getEditText().getText().toString();
-                        if (passwordTask == null) {
-                            passwordTask = new PasswordTask(pass, false);
-                            passwordTask.execute();
+                        if (loginTask == null) {
+                            loginTask = new LoginWalletTask(pass, false);
+                            loginTask.execute();
                         }
                     }
                 });
@@ -606,9 +589,9 @@ public class Helper {
                 if ((event != null && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) && (event.getAction() == KeyEvent.ACTION_DOWN))
                         || (actionId == EditorInfo.IME_ACTION_DONE)) {
                     String pass = etPassword.getEditText().getText().toString();
-                    if (passwordTask == null) {
-                        passwordTask = new PasswordTask(pass, false);
-                        passwordTask.execute();
+                    if (loginTask == null) {
+                        loginTask = new LoginWalletTask(pass, false);
+                        loginTask.execute();
                     }
                     return true;
                 }
@@ -625,24 +608,21 @@ public class Helper {
     }
 
     public interface PasswordAction {
-        void act(String walletName, String password, boolean fingerprintUsed);
-
-        void fail(String walletName, String password, boolean fingerprintUsed);
+        void action(String walletName, String password, boolean fingerprintUsed);
     }
 
     static private boolean processPasswordEntry(Context context, String walletName, String pass, boolean fingerprintUsed, PasswordAction action) {
         String walletPassword = Helper.getWalletPassword(context, walletName, pass);
         if (walletPassword != null) {
-            action.act(walletName, walletPassword, fingerprintUsed);
+            action.action(walletName, walletPassword, fingerprintUsed);
             return true;
         } else {
-            action.fail(walletName, walletPassword, fingerprintUsed);
             return false;
         }
     }
 
     static public ExchangeApi getExchangeApi() {
-        return new com.m2049r.xmrwallet.service.exchange.krakenEcb.ExchangeApiImpl(OkHttpHelper.getOkHttpClient());
+        return new com.m2049r.xmrwallet.service.exchange.coingecko.ExchangeApiImpl(OkHttpHelper.getOkHttpClient());
     }
 
     public interface Action {
@@ -662,31 +642,5 @@ public class Helper {
 
     static public boolean preventScreenshot() {
         return !(BuildConfig.DEBUG || BuildConfig.FLAVOR_type.equals("alpha"));
-    }
-
-    static public final int STALE_NODE_HOURS = 2;
-
-    static public void showTimeDifference(TextView view, long timeInSeconds) {
-        final Context ctx = view.getContext();
-        final long now = Calendar.getInstance().getTimeInMillis() / 1000;
-        final long secs = (now - timeInSeconds);
-        final long mins = secs / 60; // in minutes
-        final long hours = mins / 60;
-        final long days = hours / 24;
-        String msg;
-        if (mins < 2) {
-            msg = ctx.getString(R.string.node_updated_now, secs);
-        } else if (hours < 2) {
-            msg = ctx.getString(R.string.node_updated_mins, mins);
-        } else if (days < 2) {
-            msg = ctx.getString(R.string.node_updated_hours, hours);
-        } else {
-            msg = ctx.getString(R.string.node_updated_days, days);
-        }
-        view.setText(msg);
-        if (hours >= STALE_NODE_HOURS)
-            view.setTextColor(ColorHelper.getThemedColor(view.getContext(), R.attr.colorError));
-        else
-            view.setTextColor(ColorHelper.getThemedColor(view.getContext(), android.R.attr.textColorPrimary));
     }
 }

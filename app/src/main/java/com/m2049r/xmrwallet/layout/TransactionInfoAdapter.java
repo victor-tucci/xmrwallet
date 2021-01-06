@@ -17,8 +17,8 @@
 package com.m2049r.xmrwallet.layout;
 
 import android.content.Context;
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.RecyclerView;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,8 +28,9 @@ import android.widget.TextView;
 import com.m2049r.xmrwallet.R;
 import com.m2049r.xmrwallet.model.TransactionInfo;
 import com.m2049r.xmrwallet.util.Helper;
-import com.m2049r.xmrwallet.data.UserNotes;
+import com.m2049r.xmrwallet.util.UserNotes;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -60,8 +61,8 @@ public class TransactionInfoAdapter extends RecyclerView.Adapter<TransactionInfo
 
     public TransactionInfoAdapter(Context context, OnInteractionListener listener) {
         this.context = context;
-        inboundColour = ContextCompat.getColor(context, R.color.tx_plus);
-        outboundColour = ContextCompat.getColor(context, R.color.tx_minus);
+        inboundColour = ContextCompat.getColor(context, R.color.tx_green);
+        outboundColour = ContextCompat.getColor(context, R.color.tx_red);
         pendingColour = ContextCompat.getColor(context, R.color.tx_pending);
         failedColour = ContextCompat.getColor(context, R.color.tx_failed);
         infoItems = new ArrayList<>();
@@ -112,7 +113,6 @@ public class TransactionInfoAdapter extends RecyclerView.Adapter<TransactionInfo
     }
 
     class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        final ImageView ivTxType;
         final TextView tvAmount;
         final TextView tvFee;
         final TextView tvPaymentId;
@@ -121,7 +121,6 @@ public class TransactionInfoAdapter extends RecyclerView.Adapter<TransactionInfo
 
         ViewHolder(View itemView) {
             super(itemView);
-            ivTxType = itemView.findViewById(R.id.ivTxType);
             tvAmount = itemView.findViewById(R.id.tx_amount);
             tvFee = itemView.findViewById(R.id.tx_fee);
             tvPaymentId = itemView.findViewById(R.id.tx_paymentid);
@@ -140,11 +139,6 @@ public class TransactionInfoAdapter extends RecyclerView.Adapter<TransactionInfo
             this.infoItem = infoItems.get(position);
 
             UserNotes userNotes = new UserNotes(infoItem.notes);
-            if (userNotes.xmrtoKey != null) {
-                ivTxType.setVisibility(View.VISIBLE);
-            } else {
-                ivTxType.setVisibility(View.GONE); // gives us more space for the amount
-            }
 
             String displayAmount = Helper.getDisplayAmount(infoItem.amount, Helper.DISPLAY_DIGITS_INFO);
             if (infoItem.direction == TransactionInfo.Direction.Direction_Out) {

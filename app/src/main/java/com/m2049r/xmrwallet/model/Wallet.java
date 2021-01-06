@@ -16,8 +16,8 @@
 
 package com.m2049r.xmrwallet.model;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import com.m2049r.xmrwallet.data.TxData;
 
@@ -28,7 +28,13 @@ import java.util.Locale;
 
 import timber.log.Timber;
 
+import timber.log.Timber;
+
 public class Wallet {
+
+    public static final long SMALLEST_UNITS_IN_LOK = 1000000000L;
+    public static final String LOKI_SYMBOL = "LOKI";
+
     final static public long SWEEP_ALL = Long.MAX_VALUE;
 
     static {
@@ -248,13 +254,7 @@ public class Wallet {
 
     public native long getDaemonBlockChainTargetHeight();
 
-    public native boolean isSynchronizedJ();
-
-    public boolean isSynchronized() {
-        final long daemonHeight = getDaemonBlockChainHeight();
-        if (daemonHeight == 0) return false;
-        return isSynchronizedJ() && (getBlockChainHeight() == daemonHeight);
-    }
+    public native boolean isSynchronized();
 
     public static native String getDisplayAmount(long amount);
 
@@ -284,8 +284,6 @@ public class Wallet {
 
     public native void refreshAsync();
 
-    public native void rescanBlockchainAsync();
-
 //TODO virtual void setAutoRefreshInterval(int millis) = 0;
 //TODO virtual int autoRefreshInterval() const = 0;
 
@@ -306,23 +304,24 @@ public class Wallet {
     public PendingTransaction createTransaction(TxData txData) {
         return createTransaction(
                 txData.getDestinationAddress(),
+                txData.getPaymentId(),
                 txData.getAmount(),
                 txData.getMixin(),
                 txData.getPriority());
     }
 
-    public PendingTransaction createTransaction(String dst_addr,
+    public PendingTransaction createTransaction(String dst_addr, String payment_id,
                                                 long amount, int mixin_count,
                                                 PendingTransaction.Priority priority) {
         disposePendingTransaction();
         int _priority = priority.getValue();
         long txHandle =
                 (amount == SWEEP_ALL ?
-                        createSweepTransaction(dst_addr, "", mixin_count, _priority,
+                        createSweepTransaction(dst_addr, payment_id, mixin_count, _priority,
                                 accountIndex) :
-                        createTransactionJ(dst_addr, "", amount, mixin_count, _priority,
+                        createTransactionJ(dst_addr, payment_id, amount, mixin_count, _priority,
                                 accountIndex));
-        pendingTransaction = new PendingTransaction(txHandle);
+        pendingTransaction = new PendingTransaction(txHandle, priority == PendingTransaction.Priority.Blink);
         return pendingTransaction;
     }
 
@@ -338,7 +337,7 @@ public class Wallet {
     public PendingTransaction createSweepUnmixableTransaction() {
         disposePendingTransaction();
         long txHandle = createSweepUnmixableTransactionJ();
-        pendingTransaction = new PendingTransaction(txHandle);
+        pendingTransaction = new PendingTransaction(txHandle, false /*blink*/);
         return pendingTransaction;
     }
 

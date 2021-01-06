@@ -65,7 +65,7 @@ public class OpenAliasHelper {
     }
 
     public interface OnResolvedListener {
-        void onResolved(Map<BarcodeData.Asset, BarcodeData> dataMap);
+        void onResolved(BarcodeData barcode);
 
         void onFailure();
     }
@@ -138,16 +138,14 @@ public class OpenAliasHelper {
         public void onPostExecute(Boolean success) {
             if (resolvedListener != null)
                 if (success) {
-                    Map<BarcodeData.Asset, BarcodeData> dataMap = new HashMap<>();
+                    BarcodeData result = null;
                     for (String txt : txts) {
                         BarcodeData bc = BarcodeData.parseOpenAlias(txt, dnssec);
                         if (bc != null) {
-                            if (!dataMap.containsKey(bc.asset)) {
-                                dataMap.put(bc.asset, bc);
-                            }
+                            result = bc;
                         }
                     }
-                    resolvedListener.onResolved(dataMap);
+                    resolvedListener.onResolved(result);
                 } else {
                     resolvedListener.onFailure();
                 }

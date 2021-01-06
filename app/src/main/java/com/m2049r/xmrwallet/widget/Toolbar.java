@@ -20,19 +20,20 @@ package com.m2049r.xmrwallet.widget;
 
 import android.content.Context;
 import android.os.Build;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.material.appbar.MaterialToolbar;
 import com.m2049r.xmrwallet.R;
 
 import timber.log.Timber;
 
-public class Toolbar extends MaterialToolbar {
+public class Toolbar extends android.support.v7.widget.Toolbar {
+
     public interface OnButtonListener {
         void onButton(int type);
     }
@@ -46,7 +47,7 @@ public class Toolbar extends MaterialToolbar {
     ImageView toolbarImage;
     TextView toolbarTitle;
     TextView toolbarSubtitle;
-    ImageButton bCredits;
+    Button bCredits;
 
     public Toolbar(Context context) {
         super(context);
@@ -83,7 +84,7 @@ public class Toolbar extends MaterialToolbar {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             // the vector image does not work well for androis < Nougat
             toolbarImage.getLayoutParams().width = (int) getResources().getDimension(R.dimen.logo_width);
-            toolbarImage.setImageResource(R.drawable.logo_horizontol_xmrujo);
+            toolbarImage.setImageResource(R.drawable.logo_horizontal_loki);
         }
 
         toolbarTitle = findViewById(R.id.toolbarTitle);
@@ -126,38 +127,53 @@ public class Toolbar extends MaterialToolbar {
         switch (type) {
             case BUTTON_BACK:
                 Timber.d("BUTTON_BACK");
-                bCredits.setImageResource(R.drawable.ic_arrow_back_white_24dp);
+                bCredits.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_arrow_back_white_24dp, 0, 0, 0);
+                bCredits.setText(null);
                 bCredits.setVisibility(View.VISIBLE);
                 break;
             case BUTTON_CLOSE:
                 Timber.d("BUTTON_CLOSE");
-                bCredits.setImageResource(R.drawable.ic_close_white_24dp);
+                bCredits.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_close_white_24dp, 0, 0, 0);
+                bCredits.setText(R.string.label_close);
                 bCredits.setVisibility(View.VISIBLE);
                 break;
             case BUTTON_CREDITS:
                 Timber.d("BUTTON_CREDITS");
-                bCredits.setImageResource(R.drawable.ic_favorite_white_24dp);
+                bCredits.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite_white_24dp, 0, 0, 0);
+                bCredits.setText(R.string.label_credits);
                 bCredits.setVisibility(View.VISIBLE);
                 break;
             case BUTTON_CANCEL:
                 Timber.d("BUTTON_CANCEL");
-                bCredits.setImageResource(R.drawable.ic_close_white_24dp);
+                bCredits.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_close_white_24dp, 0, 0, 0);
+                bCredits.setText(R.string.label_cancel);
                 bCredits.setVisibility(View.VISIBLE);
                 break;
             case BUTTON_NONE:
             default:
                 Timber.d("BUTTON_NONE");
+                bCredits.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+                bCredits.setText(null);
                 bCredits.setVisibility(View.INVISIBLE);
         }
         buttonType = type;
     }
 
-    public void setSubtitle(String subtitle) {
+    public void setSubtitle(@Nullable String subtitle) {
         toolbarSubtitle.setText(subtitle);
         if (subtitle != null) {
+            setLogoTopMargin((int) getResources().getDimension(R.dimen.logo_margin_top));
             toolbarSubtitle.setVisibility(View.VISIBLE);
         } else {
+            setLogoTopMargin(0);
             toolbarSubtitle.setVisibility(View.INVISIBLE);
         }
     }
+
+    public void setLogoTopMargin(int dp) {
+        MarginLayoutParams marginParams = (MarginLayoutParams) toolbarImage.getLayoutParams();
+        marginParams.setMargins(marginParams.leftMargin, dp, marginParams.rightMargin, marginParams.bottomMargin);
+        toolbarImage.setLayoutParams(marginParams);
+    }
+
 }

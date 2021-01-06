@@ -54,8 +54,6 @@ public class SendSuccessWizardFragment extends SendWizardFragment {
 
         void enableDone();
 
-        SendFragment.Mode getMode();
-
         SendFragment.Listener getActivityCallback();
     }
 
@@ -76,10 +74,12 @@ public class SendSuccessWizardFragment extends SendWizardFragment {
                 R.layout.fragment_send_success, container, false);
 
         bCopyTxId = view.findViewById(R.id.bCopyTxId);
-        bCopyTxId.setEnabled(false);
-        bCopyTxId.setOnClickListener(v -> {
-            Helper.clipBoardCopy(getActivity(), getString(R.string.label_send_txid), tvTxId.getText().toString());
-            Toast.makeText(getActivity(), getString(R.string.message_copy_txid), Toast.LENGTH_SHORT).show();
+        bCopyTxId.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Helper.clipBoardCopy(getActivity(), getString(R.string.label_send_txid), tvTxId.getText().toString());
+                Toast.makeText(getActivity(), getString(R.string.message_copy_txid), Toast.LENGTH_SHORT).show();
+            }
         });
 
         tvTxId = view.findViewById(R.id.tvTxId);
@@ -109,11 +109,18 @@ public class SendSuccessWizardFragment extends SendWizardFragment {
 
         final TxData txData = sendListener.getTxData();
         tvTxAddress.setText(txData.getDestinationAddress());
+        String paymentId = txData.getPaymentId();
+        if ((paymentId != null) && (!paymentId.isEmpty())) {
+            tvTxPaymentId.setText(txData.getPaymentId());
+        } else {
+            tvTxPaymentId.setText("-");
+        }
 
         final PendingTx committedTx = sendListener.getCommittedTx();
         if (committedTx != null) {
             tvTxId.setText(committedTx.txId);
             bCopyTxId.setEnabled(true);
+            bCopyTxId.setImageResource(R.drawable.ic_content_copy_black_24dp);
 
             if (sendListener.getActivityCallback().isStreetMode()
                     && (sendListener.getTxData().getAmount() == Wallet.SWEEP_ALL)) {

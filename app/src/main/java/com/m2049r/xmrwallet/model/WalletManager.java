@@ -56,9 +56,9 @@ public class WalletManager {
     static public String addressPrefix(NetworkType networkType) {
         switch (networkType) {
             case NetworkType_Testnet:
-                return "9A-";
+                return "T6-";
             case NetworkType_Mainnet:
-                return "4-";
+                return "L-";
             case NetworkType_Stagenet:
                 return "5-";
             default:
@@ -275,7 +275,6 @@ public class WalletManager {
         return networkType;
     }
 
-    // this should not be called on the main thread as it connects to the node (and takes a long time)
     public void setDaemon(Node node) {
         if (node != null) {
             this.daemonAddress = node.getAddress();
@@ -356,5 +355,5 @@ public class WalletManager {
 
     static public native void logError(String category, String message);
 
-    static public native String moneroVersion();
+//    static public native String moneroVersion();
 }

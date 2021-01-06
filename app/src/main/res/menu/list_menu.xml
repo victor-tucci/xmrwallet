@@ -27,10 +27,4 @@
         android:title="@string/menu_help"
         app:showAsAction="ifRoom" />
 
-    <item
-        android:id="@+id/action_theme"
-        android:orderInCategory="600"
-        android:title="@string/menu_daynight"
-        app:showAsAction="never" />
-
 </menu>
