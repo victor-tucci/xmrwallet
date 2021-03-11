@@ -11,7 +11,7 @@ docker create --name beldex-android beldex-android-image
 
 build_dir=`pwd`/tmp_build
 rm -Rf $build_dir
-docker cp loki-android:/opt/android/build $build_dir
+docker cp beldex-android:/opt/android/build $build_dir
 
 for arch in ${archs[@]}; do
     case ${arch} in
