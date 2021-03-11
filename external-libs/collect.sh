@@ -1,13 +1,13 @@
 #!/bin/bash
 
 packages=(boost openssl monero libsodium sqlite)
-archs=(arm arm64 x86 x86_64)
-#archs=(x86)
+#archs=(arm arm64 x86 x86_64)
+archs=(x86_64)
 
-docker container rm loki-android > /dev/null 2>&1
+docker container rm beldex-android > /dev/null 2>&1
 
 set -e
-docker create --name loki-android loki-android-image
+docker create --name beldex-android beldex-android-image
 
 build_dir=`pwd`/tmp_build
 rm -Rf $build_dir
@@ -48,7 +48,7 @@ for arch in ${archs[@]}; do
 done
 
 rm -rf $build_dir
-docker container rm loki-android
+docker container rm beldex-android
 
 exit 0
 
