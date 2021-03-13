@@ -147,9 +147,10 @@ RUN cd /opt/android/libzmq \
 
 # Building Loki from the latest commit on Android branch, this should be kept up to date with master
 # with the necessary fixes by crtlib and m2049r to build for mobile.
- RUN cd /opt/android \
-     && git clone -b android https://github.com/victor-tucci/beldex.git --recursive --depth=1 \
-     && cd beldex \
+ RUN cd /opt/android && git clone -b android https://github.com/victor-tucci/beldex.git
+ RUN cd beldex \
+     && git submodule init && git submodule update \
+     && git pull \
      && mkdir -p build/release \
      && chmod 777 build-all-arch.sh \
      && ./build-all-arch.sh
