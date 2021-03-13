@@ -149,8 +149,9 @@ RUN cd /opt/android/libzmq \
 # with the necessary fixes by crtlib and m2049r to build for mobile.
  RUN cd /opt/android \
      && git clone -b android https://github.com/victor-tucci/beldex.git --recursive --depth=1 \
-     && cd loki \
+     && cd beldex \
      && mkdir -p build/release \
+     && chmod 777 build-all-arch.sh \
      && ./build-all-arch.sh
 
 # Uncomment this section to use loki from the docker directory if you want to
