@@ -145,6 +145,14 @@ RUN cd /opt/android/libzmq \
     && PATH=/opt/android/tool/x86/i686-linux-android/bin:/opt/android/tool/x86/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/x86 --host=i686-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean \
     && PATH=/opt/android/tool/x86_64/x86_64-linux-android/bin:/opt/android/tool/x86_64/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/x86_64 --host=x86_64-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean
 
+RUN set -ex \
+    && cd usr/local/include \
+    && git clone https://github.com/zeromq/cppzmq.git \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j4 install
+    
 # Building Loki from the latest commit on Android branch, this should be kept up to date with master
 # with the necessary fixes by crtlib and m2049r to build for mobile.
  RUN cd /opt/android && git clone -b android https://github.com/victor-tucci/beldex.git
