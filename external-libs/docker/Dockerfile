@@ -146,7 +146,7 @@ RUN cd /opt/android/libzmq \
     && PATH=/opt/android/tool/x86_64/x86_64-linux-android/bin:/opt/android/tool/x86_64/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/x86_64 --host=x86_64-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean
 
 RUN set -ex \
-    && cd usr/local/include \
+    && cd /usr/local/include \
     && git clone https://github.com/zeromq/cppzmq.git \
     && mkdir build \
     && cd build \
