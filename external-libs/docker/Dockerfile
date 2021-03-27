@@ -129,24 +129,31 @@ RUN cd /opt/android/sqlite \
     && PATH=/opt/android/tool/x86_64/x86_64-linux-android/bin:/opt/android/tool/x86_64/bin:$PATH ; CC=clang CXX=clang++ ./configure --prefix=/opt/android/build/sqlite/x86_64 --host=x86_64-linux-android --disable-shared --with-pic && make && make install && make clean
 
 # ZMQ
-ARG ZMQ_VERSION=v4.3.2
-ARG ZMQ_HASH=a84ffa12b2eb3569ced199660bac5ad128bff1f0
-RUN set -ex \
-    && cd /opt/android \
-    && git clone https://github.com/zeromq/libzmq.git -b ${ZMQ_VERSION} --depth=1 \
-    && cd libzmq \
-    && test `git rev-parse HEAD` = ${ZMQ_HASH} || exit 1 \
-    && ./autogen.sh
+#ARG ZMQ_VERSION=v4.3.2
+#ARG ZMQ_HASH=a84ffa12b2eb3569ced199660bac5ad128bff1f0
+#RUN set -ex \
+ #   && cd /opt/android \
+  #  && git clone https://github.com/zeromq/libzmq.git -b ${ZMQ_VERSION} --depth=1 \
+   # && cd libzmq \
+   # && test `git rev-parse HEAD` = ${ZMQ_HASH} || exit 1 \
+   # && ./autogen.sh
 
 ## Building ZMQ
-RUN cd /opt/android/libzmq \
-    && PATH=/opt/android/tool/arm/arm-linux-androideabi/bin:/opt/android/tool/arm/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/arm --host=arm-linux-androideabi --enable-static --disable-shared && make && make install && ldconfig && make clean \
-    && PATH=/opt/android/tool/arm64/aarch64-linux-android/bin:/opt/android/tool/arm64/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/arm64 --host=aarch64-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean \
-    && PATH=/opt/android/tool/x86/i686-linux-android/bin:/opt/android/tool/x86/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/x86 --host=i686-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean \
-    && PATH=/opt/android/tool/x86_64/x86_64-linux-android/bin:/opt/android/tool/x86_64/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/x86_64 --host=x86_64-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean
-
+#RUN cd /opt/android/libzmq \
+ #   && PATH=/opt/android/tool/arm/arm-linux-androideabi/bin:/opt/android/tool/arm/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/arm --host=arm-linux-androideabi --enable-static --disable-shared && make && make install && ldconfig && make clean \
+  #  && PATH=/opt/android/tool/arm64/aarch64-linux-android/bin:/opt/android/tool/arm64/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/arm64 --host=aarch64-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean \
+  #  && PATH=/opt/android/tool/x86/i686-linux-android/bin:/opt/android/tool/x86/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/x86 --host=i686-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean \
+  #  && PATH=/opt/android/tool/x86_64/x86_64-linux-android/bin:/opt/android/tool/x86_64/bin:$PATH ; CC=clang CXX=clang++ CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix=/opt/android/build/libzmq/x86_64 --host=x86_64-linux-android --enable-static --disable-shared && make && make install && ldconfig && make clean
 RUN set -ex \
-    && cd /usr/local/include \
+   && cd /opt/android \
+   && git clone https://github.com/zeromq/libzmq.git \
+   && mkdir build \
+   && cd build \
+   && cmake .. \
+   && make -j4 install
+   
+RUN set -ex \
+    && cd /opt/android \
     && git clone https://github.com/zeromq/cppzmq.git \
     && mkdir build \
     && cd build \
@@ -155,10 +162,9 @@ RUN set -ex \
     
 # Building Loki from the latest commit on Android branch, this should be kept up to date with master
 # with the necessary fixes by crtlib and m2049r to build for mobile.
- RUN cd /opt/android && git clone -b android https://github.com/victor-tucci/belx.git
- RUN cd belx \
-     && git submodule init && git submodule update \
-     && git pull \
+ RUN cd /opt/android 
+    && git clone -b android https://github.com/victor-tucci/belx.git \
+     && cd belx \
      && mkdir -p build/release \
      && chmod 777 build-all-arch.sh \
      && ./build-all-arch.sh
